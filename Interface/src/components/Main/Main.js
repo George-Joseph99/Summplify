@@ -5,6 +5,7 @@ import { AiTwotoneFileAdd } from "react-icons/ai";
 import { AiTwotoneDelete } from "react-icons/ai";
 import './Main.css';
 import { List, Card, Button } from 'antd';
+
 function Main() {
 
     const [fileUpload, setFileUpload] = useState(false);
@@ -20,6 +21,17 @@ function Main() {
 
     const handleSummButtonClick = () =>{
         console.log("clickeddd");
+        const dataToSummarize = {
+            "text": text,
+            "summarizeOrSimplify": 1    // 1 for summary, 0 for simplify
+        }
+        axios.post('http://localhost:5000/main',  dataToSummarize)
+        .then(response => {
+        console.log(response.data);
+        })
+        .catch(error => {
+        console.log(error);
+        });
     }
 
     const handleTextInput = (e) => {
