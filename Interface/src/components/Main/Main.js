@@ -5,6 +5,7 @@ import { AiTwotoneFileAdd } from "react-icons/ai";
 import { AiTwotoneDelete } from "react-icons/ai";
 import './Main.css';
 import { List, Card, Button } from 'antd';
+import { createSearchParams, useNavigate } from 'react-router-dom';
 
 function Main() {
 
@@ -13,6 +14,7 @@ function Main() {
     const [file, setFile] = useState('');
     const [text, setText] = useState('');
     var files = [];
+    const navigate = useNavigate();
 
     const handleSimButtonClick = () =>{
         console.log("clickeddd");
@@ -28,6 +30,12 @@ function Main() {
         axios.post('http://localhost:5000/main',  dataToSummarize)
         .then(response => {
         console.log(response.data);
+        navigate({
+            pathname : "/output",
+            search: createSearchParams({
+                text : response.data
+            }).toString()
+            })
         })
         .catch(error => {
         console.log(error);
