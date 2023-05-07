@@ -3,7 +3,7 @@ import axios from "axios";
 import { GoCloudUpload } from "react-icons/go";
 import { AiTwotoneFileAdd } from "react-icons/ai";
 import { AiTwotoneDelete } from "react-icons/ai";
-import './Output.css';
+import './Output.css'
 import { List, Card, Button } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 import Search from 'antd/es/transfer/search';
@@ -43,7 +43,9 @@ function Output() {
     }
 
   return (
-    <p>{searchparams.get("text")}</p>
+    <div className="div_container">
+      <p className="p_output">{searchparams.get("text")}</p>
+    </div>
   );
 }
 
