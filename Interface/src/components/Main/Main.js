@@ -18,7 +18,23 @@ function Main() {
 
     const handleSimButtonClick = () =>{
         console.log("clickeddd");
-        console.log(fileUpload);
+        const dataToSummarize = {
+            "text": text,
+            "summarizeOrSimplify": 0   // 1 for summary, 0 for simplify
+        }
+        axios.post('http://localhost:5000/main',  dataToSummarize)
+        .then(response => {
+        console.log(response.data);
+        navigate({
+            pathname : "/output",
+            search: createSearchParams({
+                text : response.data
+            }).toString()
+            })
+        })
+        .catch(error => {
+        console.log(error);
+        });
     }
 
     const handleSummButtonClick = () =>{
