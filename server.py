@@ -23,6 +23,9 @@ def receive_text():
     if summary_or_simplify == 1:
         output_text = Summarizer.summarize(text)
         print(output_text)
+    elif summary_or_simplify == 0:
+        output_text = Simplifier.simplify(text)
+        print(output_text)
     return output_text
 
 if __name__ == "__main__":
