@@ -102,8 +102,8 @@ def complexWordIdentif(article):
                 wiki_freq = int(total_freq/len(word_split_hyphen))
                 lexicon_score = float(total_lexicon/len(word_split_hyphen))
                 if(wiki_freq<12000 or lexicon_score>3.0):
-                    threshold_scores_dict[word]=1
-                    word_sentence_dict[word] = sentence.lower()
+                    threshold_scores_dict[word_]=1
+                    word_sentence_dict[word_] = sentence
                     
             elif(len(word_split_underscore)>1):
                 total_freq = 0
@@ -114,8 +114,8 @@ def complexWordIdentif(article):
                 wiki_freq = int(total_freq/len(word_split_underscore))
                 lexicon_score = float(total_lexicon/len(word_split_underscore))
                 if(wiki_freq<12000 or lexicon_score>3.0):
-                    threshold_scores_dict[word]=1
-                    word_sentence_dict[word] = sentence.lower()
+                    threshold_scores_dict[word_]=1
+                    word_sentence_dict[word_] = sentence
 
             else:
                 threshold_scores_dict[word]=0
@@ -124,21 +124,21 @@ def complexWordIdentif(article):
                     lexicon_score = float(lexicon_dict[word])
     #                 print(word, wiki_freq, lexicon_score)
                     if(wiki_freq<12000 or lexicon_score>3.0):
-                        threshold_scores_dict[word]=1
-                        word_sentence_dict[word] = sentence.lower()
+                        threshold_scores_dict[word_]=1
+                        word_sentence_dict[word_] = sentence
 
                 elif(word in wiki_freq_dict):
                     wiki_freq = int(wiki_freq_dict[word])
     #                 print(word, wiki_freq)
                     if(wiki_freq<12000):
-                        threshold_scores_dict[word]=1
-                        word_sentence_dict[word] = sentence.lower()
+                        threshold_scores_dict[word_]=1
+                        word_sentence_dict[word_] = sentence
                 elif(word in lexicon_dict):
                     lexicon_score = float(lexicon_dict[word])
     #                 print(word, lexicon_score)
                     if(lexicon_score>3.0):
-                        threshold_scores_dict[word]=1
-                        word_sentence_dict[word] = sentence.lower()
+                        threshold_scores_dict[word_]=1
+                        word_sentence_dict[word_] = sentence
     return threshold_scores_dict, word_sentence_dict
 
 # Get the pos tag of a certain word 
@@ -149,10 +149,10 @@ def getPosTag(word):
 
 def getPosTagFromSentence(string, target_word):
     pos_tag=""
-    tokens = nltk.word_tokenize(string)
+    tokens = nltk.word_tokenize(string.lower())
     tag = nltk.pos_tag(tokens)
     for pair in tag:
-        if(pair[0]==target_word):
+        if(pair[0]==target_word.lower()):
             pos_tag = pair[1]
     return pos_tag
 
@@ -290,27 +290,27 @@ def genSubstitutionSpec(complex_word, sentence):
     ppdb_candidates = []
     pos_tag = getPosTagFromSentence(sentence, complex_word)
     word_type = getTypeFromTag(pos_tag)
-    wordnet_candidates = getSynWordNetSpec(complex_word, word_type)
+    wordnet_candidates = getSynWordNetSpec(complex_word.lower(), word_type)
     flat_syn_list, bighuge_dict = [],{}
 #     flat_syn_list, bighuge_dict = getSynBigHuge(complex_word)
-    if(complex_word in ppdb):
-        ppdb_candidates = ppdb[complex_word]
+    if(complex_word.lower() in ppdb):
+        ppdb_candidates = ppdb[complex_word.lower()]
     if(flat_syn_list and not bighuge_dict):
         bighuge_candidates = flat_syn_list
     if(word_type == 'n'):
-        thesaurus_candidates = thesaurus.get((complex_word,"noun"))
+        thesaurus_candidates = thesaurus.get((complex_word.lower(),"noun"))
         if("noun" in bighuge_candidates):
             bighuge_candidates = bighuge_dict["noun"].get("syn")
     elif(word_type == 'r'):
-        thesaurus_candidates = thesaurus.get((complex_word,"adv"))
+        thesaurus_candidates = thesaurus.get((complex_word.lower(),"adv"))
         if("adverb" in bighuge_candidates):
             bighuge_candidates = bighuge_dict["adverb"].get("syn")
     elif(word_type == 'v'):
-        thesaurus_candidates = thesaurus.get((complex_word,"verb"))
+        thesaurus_candidates = thesaurus.get((complex_word.lower(),"verb"))
         if("verb" in bighuge_candidates):
             bighuge_candidates = bighuge_dict["verb"].get("syn") 
     elif(word_type == 'a'):
-        thesaurus_candidates = thesaurus.get((complex_word,"adj"))
+        thesaurus_candidates = thesaurus.get((complex_word.lower(),"adj"))
         if("adjective" in bighuge_candidates):
             bighuge_candidates = bighuge_dict["adjective"].get("syn")
 
@@ -322,7 +322,7 @@ def filterSubstitutions(word_subs_dict):
     wnl = WordNetLemmatizer()
     ps = PorterStemmer()
     for word in word_subs_dict:
-        word_lemm = wnl.lemmatize(word)
+        word_lemm = wnl.lemmatize(word.lower())
         filtered_subs_list = []
         subs_set = word_subs_dict[word]
         if(len(subs_set)>0):
@@ -333,10 +333,10 @@ def filterSubstitutions(word_subs_dict):
                 if(len(word_list) > 1):
                     add_word = True
                     for word_ in word_list:
-                        word_lemm = wnl.lemmatize(word)
-                        subs_lemm = wnl.lemmatize(word_)
-                        if(ps.stem(word_)==ps.stem(word) or wnl.lemmatize(word_)==wnl.lemmatize(word) or is_similar(word_, word) or is_similar(word_, word_lemm) 
-                          or is_similar(subs_lemm, word_lemm) or is_similar(subs_lemm, word)):
+                        word_lemm = wnl.lemmatize(word.lower())
+                        subs_lemm = wnl.lemmatize(word_.lower())
+                        if(ps.stem(word_.lower())==ps.stem(word.lower()) or subs_lemm==word_lemm or is_similar(word_.lower(), word.lower()) or is_similar(word_.lower(), word_lemm) 
+                          or is_similar(subs_lemm, word_lemm) or is_similar(subs_lemm, word.lower())):
                             add_word = False
                             break
                     if(add_word):
@@ -344,10 +344,10 @@ def filterSubstitutions(word_subs_dict):
                 elif(len(word_split_hyphen)>1):
                     add_word = True
                     for word_ in word_split_hyphen:
-                        word_lemm = wnl.lemmatize(word)
-                        subs_lemm = wnl.lemmatize(word_)
-                        if(ps.stem(word_)==ps.stem(word) or wnl.lemmatize(word_)==wnl.lemmatize(word) or is_similar(word_, word) or is_similar(word_, word_lemm) 
-                          or is_similar(subs_lemm, word_lemm) or is_similar(subs_lemm, word)):
+                        word_lemm = wnl.lemmatize(word.lower())
+                        subs_lemm = wnl.lemmatize(word_.lower())
+                        if(ps.stem(word_.lower())==ps.stem(word.lower()) or subs_lemm==word_lemm or is_similar(word_.lower(), word.lower()) or is_similar(word_.lower(), word_lemm) 
+                          or is_similar(subs_lemm, word_lemm) or is_similar(subs_lemm, word.lower())):
                             add_word = False
                             break
                     if(add_word):
@@ -355,18 +355,18 @@ def filterSubstitutions(word_subs_dict):
                 elif(len(word_split_underscore)>1):
                     add_word = True
                     for word_ in word_split_underscore:
-                        word_lemm = wnl.lemmatize(word)
-                        subs_lemm = wnl.lemmatize(word_)
-                        if(ps.stem(word_)==ps.stem(word) or wnl.lemmatize(word_)==wnl.lemmatize(word) or is_similar(word_, word) or is_similar(word_, word_lemm)
-                          or is_similar(subs_lemm, word_lemm) or is_similar(subs_lemm, word)):
+                        word_lemm = wnl.lemmatize(word.lower())
+                        subs_lemm = wnl.lemmatize(word_.lower())
+                        if(ps.stem(word_.lower())==ps.stem(word.lower()) or subs_lemm==word_lemm or is_similar(word_.lower(), word.lower()) or is_similar(word_.lower(), word_lemm)
+                          or is_similar(subs_lemm, word_lemm) or is_similar(subs_lemm, word.lower())):
                             add_word = False
                             break
                     if(add_word):
                         filtered_subs_list.append(subs)
                 else: 
-                    subs_lemm = wnl.lemmatize(subs)
-                    if(ps.stem(subs)!=ps.stem(word) and wnl.lemmatize(subs)!=wnl.lemmatize(word) and not is_similar(subs, word) and not is_similar(subs, word_lemm)
-                      and not is_similar(subs_lemm, word_lemm) and not is_similar(subs_lemm, word)):
+                    subs_lemm = wnl.lemmatize(subs.lower())
+                    if(ps.stem(subs.lower())!=ps.stem(word.lower()) and subs_lemm!=word_lemm and not is_similar(subs.lower(), word.lower()) and not is_similar(subs.lower(), word_lemm)
+                      and not is_similar(subs_lemm, word_lemm) and not is_similar(subs_lemm, word.lower())):
                         filtered_subs_list.append(subs)
         word_subs_dict_filtered[word] = filtered_subs_list
     return word_subs_dict_filtered
@@ -382,6 +382,7 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
             for subs in subs_list:
                 subs_tag = getPosTag(subs)
                 subs_type = getTypeFromTag(subs_tag)
+#                 print(subs, subs_type)
                 if(word_tag=="NN" and subs_tag=="NNS"):
                     new_subs = singularize(subs)
                     modified_subs.append(new_subs)
@@ -405,10 +406,9 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                 elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
                     modified_subs.append(subs)
             modified_word_subs_dict[word] = modified_subs
-        elif(word_type == 'v' and word_tag !="VBD" and word_tag !="VBN"): #VERBS
+        elif(word_type == 'v'): #VERBS
             modified_subs = []
             try:
-                complex_tense = tenses(word)
                 for subs in subs_list:
                     subs_tokens = nltk.word_tokenize(subs)
     #                 subs_split = subs.split(" ")
@@ -425,18 +425,20 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                         else:
                             new_subs = conjugate(subs, tense=PAST)
                             modified_subs.append(new_subs)
-                    elif(word_tag=="VBP" or word_tag=="VBZ"): #-->PRESENT
-                        new_subs = conjugate(subs, tense=PRESENT)
-                        modified_subs.append(new_subs)
-                    elif((len(complex_tense)>0 and complex_tense[0][0]=="infinitive") or word_tag=="VBG"): #-->INFINITIVE
-                        new_subs = conjugate(subs, tense=INFINITIVE)
-                        modified_subs.append(new_subs)
-                    elif(len(complex_tense)>0 and complex_tense[0][0]=="future"): #-->FUTURE
-    #                     print(word_tag, complex_tense, complex_tense[0][0], word, "\n")
-                        new_subs = conjugate(subs, tense=FUTURE)
-                        modified_subs.append(new_subs)   
                     else:
-                        modified_subs.append(subs)  
+                        complex_tense = tenses(word)
+                        if(word_tag=="VBP" or word_tag=="VBZ"): #-->PRESENT
+                            new_subs = conjugate(subs, tense=PRESENT)
+                            modified_subs.append(new_subs)
+                        elif((len(complex_tense)>0 and complex_tense[0][0]=="infinitive") or word_tag=="VBG"): #-->INFINITIVE
+                            new_subs = conjugate(subs, tense=INFINITIVE)
+                            modified_subs.append(new_subs)
+                        elif(len(complex_tense)>0 and complex_tense[0][0]=="future"): #-->FUTURE
+        #                     print(word_tag, complex_tense, complex_tense[0][0], word, "\n")
+                            new_subs = conjugate(subs, tense=FUTURE)
+                            modified_subs.append(new_subs)   
+                        else:
+                            modified_subs.append(subs)  
                 modified_word_subs_dict[word] = modified_subs
             except StopIteration as e:
                 print("exceptionn") 
@@ -608,7 +610,7 @@ def simplify(text):
     thresh_scores, word_sentence_dict = complexWordIdentif(text)
 #     print(word_sentence_dict)
     word_subst_dict = {}
-    new_text = text.lower() # initialize the new string with the original one
+    new_text = text # initialize the new string with the original one
     for word in word_sentence_dict:
         word_subst_dict[word] = set()
         sentence = word_sentence_dict[word]
@@ -640,19 +642,19 @@ def simplify(text):
         if(len(candidates)>0):
             for candidate in candidates:
                 three_gram_phrase = ''
-                prev_word = word_preceding(sentence.lower(), target_word)
-                next_word = word_following(sentence.lower(), target_word)
+                prev_word = word_preceding(sentence, target_word)
+                next_word = word_following(sentence, target_word)
                 if(prev_word and next_word):
                     three_gram_phrase = prev_word + " " + candidate + " " + next_word
                     three_gram_dict[candidate] = [prev_word, candidate, next_word]
                 features_list = extractFeaturesFromWord(candidate, three_gram_dict)
-                if(target_word in word_vectors and candidate in word_vectors):     
-                    target_word_vector = word_vectors[target_word]
-                    substitution_vector = word_vectors[candidate]
+                if(target_word.lower() in word_vectors and candidate.lower() in word_vectors):     
+                    target_word_vector = word_vectors[target_word.lower()]
+                    substitution_vector = word_vectors[candidate.lower()]
                     cos_similarity = getCosSim(target_word_vector, substitution_vector)
                 else:
                     cos_similarity = 0
-                similarity_ratios.append(similarityRatio(target_word, candidate))
+                similarity_ratios.append(similarityRatio(target_word.lower(), candidate.lower()))
                 cosine_similarities.append(cos_similarity)
                 feature_matrix.append(features_list)
             cosine_similarities = np.array(cosine_similarities).reshape(len(feature_matrix),1)
@@ -672,12 +674,16 @@ def simplify(text):
             min_index=prediction_list.index(min_value)
 #             print(prediction_list,"\n",candidates)
             chosen_candidate = candidates[min_index]
+            if(target_word[0].isupper()):
+                chosen_candidate = chosen_candidate[0].upper() + chosen_candidate[1:]
+            if(target_word.isupper()):
+                chosen_candidate = chosen_candidate.upper()
             if(prev_word == 'a' and chosen_candidate[0] in vowels):
                 new_text = new_text.replace('a '+ target_word, 'an ' + chosen_candidate)
             elif(prev_word == 'an' and chosen_candidate[0] not in vowels):
                 new_text = new_text.replace('an '+ target_word, 'a ' + chosen_candidate)
             else:
-                new_text = new_text.replace(target_word.lower(), chosen_candidate)
+                new_text = new_text.replace(target_word, chosen_candidate)
             word_replace_dict[target_word] = chosen_candidate
 #             print(candidates, "\n", prediction)
     return new_text
