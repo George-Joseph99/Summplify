@@ -68,12 +68,20 @@ lexicon_dict = generateLexiconDict('lexicon.tsv')
 # LS step1: Complex Word Identification
 
 def word_preceding(text, word):
-    words = text.split()
+    sentences = sent_tokenize(text)
+    words = []
+    for sentence in sentences:
+        words_from_sentence = word_tokenize(sentence)
+        words.extend(words_from_sentence)
     index = words.index(word)
     return words[index-1] if index > 0 else None
 
 def word_following(text, word):
-    words = text.split()
+    sentences = sent_tokenize(text)
+    words = []
+    for sentence in sentences:
+        words_from_sentence = word_tokenize(sentence)
+        words.extend(words_from_sentence)
     index = words.index(word)
     return words[index+1] if index+1 < len(words) else None
 
@@ -95,7 +103,7 @@ def complexWordIdentif(article):
                 lexicon_score = float(total_lexicon/len(word_split_hyphen))
                 if(wiki_freq<12000 or lexicon_score>3.0):
                     threshold_scores_dict[word]=1
-                    word_sentence_dict[word] = sentence
+                    word_sentence_dict[word] = sentence.lower()
                     
             elif(len(word_split_underscore)>1):
                 total_freq = 0
@@ -107,7 +115,7 @@ def complexWordIdentif(article):
                 lexicon_score = float(total_lexicon/len(word_split_underscore))
                 if(wiki_freq<12000 or lexicon_score>3.0):
                     threshold_scores_dict[word]=1
-                    word_sentence_dict[word] = sentence
+                    word_sentence_dict[word] = sentence.lower()
 
             else:
                 threshold_scores_dict[word]=0
@@ -117,24 +125,20 @@ def complexWordIdentif(article):
     #                 print(word, wiki_freq, lexicon_score)
                     if(wiki_freq<12000 or lexicon_score>3.0):
                         threshold_scores_dict[word]=1
-                        word_sentence_dict[word] = sentence
+                        word_sentence_dict[word] = sentence.lower()
 
                 elif(word in wiki_freq_dict):
                     wiki_freq = int(wiki_freq_dict[word])
     #                 print(word, wiki_freq)
                     if(wiki_freq<12000):
                         threshold_scores_dict[word]=1
-                        word_sentence_dict[word] = sentence
-                        prev_word = word_preceding(sentence, word)
-                        next_word = word_following(sentence, word)
+                        word_sentence_dict[word] = sentence.lower()
                 elif(word in lexicon_dict):
                     lexicon_score = float(lexicon_dict[word])
     #                 print(word, lexicon_score)
                     if(lexicon_score>3.0):
                         threshold_scores_dict[word]=1
-                        word_sentence_dict[word] = sentence
-                        prev_word = word_preceding(sentence, word)
-                        next_word = word_following(sentence, word)
+                        word_sentence_dict[word] = sentence.lower()
     return threshold_scores_dict, word_sentence_dict
 
 # Get the pos tag of a certain word 
@@ -401,7 +405,7 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                 elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
                     modified_subs.append(subs)
             modified_word_subs_dict[word] = modified_subs
-        elif(word_type == 'v'): #VERBS
+        elif(word_type == 'v' and word_tag !="VBD" and word_tag !="VBN"): #VERBS
             modified_subs = []
             try:
                 complex_tense = tenses(word)
@@ -571,7 +575,7 @@ def predict(model, x):
 
 def simplify(text):
     
-    model = {'W1': array([[ 0.66145244,  0.16270804,  0.37252965,  0.84023676,  0.7127424 ,
+    model = {'W1': [[ 0.66145244,  0.16270804,  0.37252965,  0.84023676,  0.7127424 ,
         -0.3567563 ,  0.37010674],
        [-0.04221344,  0.04851904,  0.12056598,  0.15521051,  0.60280313,
          0.31525486,  0.1044011 ],
@@ -586,23 +590,25 @@ def simplify(text):
        [-0.66710857,  0.69112549, -0.24370165, -0.13958974, -0.43323821,
          0.30040376, -0.62147804],
        [-0.16938653, -0.51091617, -0.0947284 , -0.20217333, -0.25982684,
-         0.01728051,  0.153387  ]]), 'b1': array([[ 0.01014841],
+         0.01728051,  0.153387  ]], 'b1': [[ 0.01014841],
        [-0.04420122],
        [-0.1130388 ],
        [-0.12162635],
        [-0.05295276],
        [-0.00409472],
        [-0.08975829],
-       [-0.39391215]]), 'W2': array([[-0.02744851, -0.39425468, -0.16648875, -0.16939112, -0.13249023,
-         0.03129614, -0.05804739, -0.40915087]]), 'b2': array([[0.34160712]])}
+       [-0.39391215]], 'W2': [[-0.02744851, -0.39425468, -0.16648875, -0.16939112, -0.13249023,
+         0.03129614, -0.05804739, -0.40915087]], 'b2': [[0.34160712]]}
     
     num_features = 7
     vowels = "aeiouAEIOU"
     prediction = []
     word_replace_dict = {}
+    thresh_scores = {} 
     thresh_scores, word_sentence_dict = complexWordIdentif(text)
+#     print(word_sentence_dict)
     word_subst_dict = {}
-    new_text = text # initialize the new string with the original one
+    new_text = text.lower() # initialize the new string with the original one
     for word in word_sentence_dict:
         word_subst_dict[word] = set()
         sentence = word_sentence_dict[word]
@@ -616,21 +622,28 @@ def simplify(text):
         if(ppdb_candidates):
             word_subst_dict[word].update(ppdb_candidates)
     filtered_subs_dict = filterSubstitutions(word_subst_dict)
+#     print(word_subst_dict)
+#     print(filtered_subs_dict)
     modified_word_subs_dict = convertGrammStructure(filtered_subs_dict, word_sentence_dict)    
+#     print(modified_word_subs_dict)
     
     # EXTRACT FEATURES
     for target_word in modified_word_subs_dict:
+        three_gram_dict = {}
         feature_matrix = []
         cosine_similarities = []
         similarity_ratios = []
         candidates = []
-        three_gram_dict = {}
         candidates = modified_word_subs_dict[target_word]
+#         print(candidates)
+#         candidates = [target_word] + modified_word_subs_dict[target_word]
         if(len(candidates)>0):
             for candidate in candidates:
-                prev_word = word_preceding(sentence, target_word)
-                next_word = word_following(sentence, target_word)
+                three_gram_phrase = ''
+                prev_word = word_preceding(sentence.lower(), target_word)
+                next_word = word_following(sentence.lower(), target_word)
                 if(prev_word and next_word):
+                    three_gram_phrase = prev_word + " " + candidate + " " + next_word
                     three_gram_dict[candidate] = [prev_word, candidate, next_word]
                 features_list = extractFeaturesFromWord(candidate, three_gram_dict)
                 if(target_word in word_vectors and candidate in word_vectors):     
@@ -649,17 +662,23 @@ def simplify(text):
             for i in range(num_features):
                 if(max_in_column[i] != 0):
                     X[:, i] /= max_in_column[i]
+#             print(candidates)
+#             print(X)
             prediction = predict(model, X)
+#             print(candidates)
+#             print(prediction)
             min_value = min(prediction)
             prediction_list = prediction.tolist()
             min_index=prediction_list.index(min_value)
+#             print(prediction_list,"\n",candidates)
             chosen_candidate = candidates[min_index]
             if(prev_word == 'a' and chosen_candidate[0] in vowels):
                 new_text = new_text.replace('a '+ target_word, 'an ' + chosen_candidate)
             elif(prev_word == 'an' and chosen_candidate[0] not in vowels):
                 new_text = new_text.replace('an '+ target_word, 'a ' + chosen_candidate)
             else:
-                new_text = new_text.replace(target_word, chosen_candidate)
+                new_text = new_text.replace(target_word.lower(), chosen_candidate)
             word_replace_dict[target_word] = chosen_candidate
+#             print(candidates, "\n", prediction)
     return new_text
 
