@@ -31,7 +31,7 @@ lexicon_dict = {}
 complex_words = []
 BIGHUGE_KEY = "105a58f9d880af14af1ca1abf6b1f996"
 word_vectors = api.load("glove-wiki-gigaword-300")
-ppdb_filepath = "ppdb-2.0-m-lexical"
+ppdb_filepath = "Simplifier/ppdb-2.0-m-lexical"
 lemmatizer = WordNetLemmatizer()
 
 
@@ -45,13 +45,13 @@ def flatten(l):
 
 def generateWikiFreqDict(text_file):
     wiki_freq_dict = {}
-    with open(text_file) as f:
+    with open(text_file, encoding='utf8') as f:
         for line in f.readlines():
             (word, freq) = line.split()
             wiki_freq_dict[word.lower()] = freq
     return wiki_freq_dict
 
-wiki_freq_dict = generateWikiFreqDict("wiki_frequencies.txt")
+wiki_freq_dict = generateWikiFreqDict("Simplifier/wiki_frequencies.txt")
 
 def generateLexiconDict(tsv_file):
     lexicon_dict = {}
@@ -63,7 +63,7 @@ def generateLexiconDict(tsv_file):
             lexicon_dict[word.lower()] = score
     return lexicon_dict
 
-lexicon_dict = generateLexiconDict('lexicon.tsv')
+lexicon_dict = generateLexiconDict('Simplifier/lexicon.tsv')
 
 # LS step1: Complex Word Identification
 
@@ -236,7 +236,7 @@ def getSynBigHugeSpec(complex_word, pos_tag):
 # possible pos: noun,verb,adj,adv
 def generateTheSaurusDict():
     thesaurus = {}
-    with open("th_en_US_new.dat") as f:
+    with open("Simplifier/th_en_US_new.dat") as f:
         code = f.readline()    # Skip the file encoding
         while(True):
             word_count_line = f.readline()
@@ -535,7 +535,7 @@ def extractFeaturesFromWord(target_word, three_gram_dict):
 #         for word in three_words:
 #             phrase+=word
         phrase = three_words[0] + " " + three_words[1] + " " + three_words[2]
-        print("p ",phrase)
+        # print("p ",phrase)
         ngram_score = getNgramScore(phrase)
     else:
         ngram_score = 0
