@@ -382,7 +382,6 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
             for subs in subs_list:
                 subs_tag = getPosTag(subs)
                 subs_type = getTypeFromTag(subs_tag)
-#                 print(subs, subs_type)
                 if(word_tag=="NN" and subs_tag=="NNS"):
                     new_subs = singularize(subs)
                     modified_subs.append(new_subs)
@@ -406,9 +405,12 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                 elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
                     modified_subs.append(subs)
             modified_word_subs_dict[word] = modified_subs
-        elif(word_type == 'v'): #VERBS
+        elif(word_type == 'v' and word_tag !="VBD" and word_tag !="VBN"): #VERBS
             modified_subs = []
             try:
+                print(word)
+                print(tenses(word))
+                complex_tense = tenses(word)
                 for subs in subs_list:
                     subs_tokens = nltk.word_tokenize(subs)
     #                 subs_split = subs.split(" ")
@@ -425,20 +427,18 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                         else:
                             new_subs = conjugate(subs, tense=PAST)
                             modified_subs.append(new_subs)
+                    elif(word_tag=="VBP" or word_tag=="VBZ"): #-->PRESENT
+                        new_subs = conjugate(subs, tense=PRESENT)
+                        modified_subs.append(new_subs)
+                    elif((len(complex_tense)>0 and complex_tense[0][0]=="infinitive") or word_tag=="VBG"): #-->INFINITIVE
+                        new_subs = conjugate(subs, tense=INFINITIVE)
+                        modified_subs.append(new_subs)
+                    elif(len(complex_tense)>0 and complex_tense[0][0]=="future"): #-->FUTURE
+    #                     print(word_tag, complex_tense, complex_tense[0][0], word, "\n")
+                        new_subs = conjugate(subs, tense=FUTURE)
+                        modified_subs.append(new_subs)   
                     else:
-                        complex_tense = tenses(word)
-                        if(word_tag=="VBP" or word_tag=="VBZ"): #-->PRESENT
-                            new_subs = conjugate(subs, tense=PRESENT)
-                            modified_subs.append(new_subs)
-                        elif((len(complex_tense)>0 and complex_tense[0][0]=="infinitive") or word_tag=="VBG"): #-->INFINITIVE
-                            new_subs = conjugate(subs, tense=INFINITIVE)
-                            modified_subs.append(new_subs)
-                        elif(len(complex_tense)>0 and complex_tense[0][0]=="future"): #-->FUTURE
-        #                     print(word_tag, complex_tense, complex_tense[0][0], word, "\n")
-                            new_subs = conjugate(subs, tense=FUTURE)
-                            modified_subs.append(new_subs)   
-                        else:
-                            modified_subs.append(subs)  
+                        modified_subs.append(subs)  
                 modified_word_subs_dict[word] = modified_subs
             except StopIteration as e:
                 print("exceptionn") 
