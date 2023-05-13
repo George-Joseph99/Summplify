@@ -9,20 +9,21 @@ CORS(app)
 # def members():
 #     return {"members" : ["Member1", "Member2", "Member3"]}
 
-@app.route('/summarize')
-def run_summarize():
-    print('d5l henaaa')
-    result = Summarizer.run_cr7()
-    return result
 
 @app.route('/main', methods=['POST'])
 def receive_text():
     data = request.get_json()
+    # print(data)
     text = data['text']
     summary_or_simplify = data['summarizeOrSimplify']
     if summary_or_simplify == 1:
-        output_text = Summarizer.summarize(text)
-        print(output_text)
+        extractive_or_abstractive = data['extractiveOrAbstractive']
+        if extractive_or_abstractive == '1':
+            output_text = Summarizer.extractive_summary(text)
+            print(output_text)
+        elif extractive_or_abstractive == '0':
+            output_text = Summarizer.abstrctive_summary(text)
+            print(output_text)
     elif summary_or_simplify == 0:
         output_text = Simplifier.simplify(text)
         print(output_text)

@@ -1,0 +1,13 @@
+numpy
+pandas
+flask-cors
+nltk
+rouge
+syllables
+enchant
+gensim
+scikit-learn
+wordfreq
+py_thesaurus
+pattern
+trax

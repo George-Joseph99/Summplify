@@ -13,16 +13,17 @@ function Main() {
     const [fileName, setFileName] = useState('');
     const [file, setFile] = useState('');
     const [text, setText] = useState('');
+    const [extractiveOrAbstractive, setExtractiveOrAbstractive] = useState('1');
     var files = [];
     const navigate = useNavigate();
 
     const handleSimButtonClick = () =>{
         console.log("clickeddd");
-        const dataToSummarize = {
+        const dataToSimplify = {
             "text": text,
             "summarizeOrSimplify": 0   // 1 for summary, 0 for simplify
         }
-        axios.post('http://localhost:5000/main',  dataToSummarize)
+        axios.post('http://localhost:5000/main',  dataToSimplify)
         .then(response => {
         console.log(response.data);
         navigate({
@@ -41,7 +42,8 @@ function Main() {
         console.log("clickeddd");
         const dataToSummarize = {
             "text": text,
-            "summarizeOrSimplify": 1    // 1 for summary, 0 for simplify
+            "summarizeOrSimplify": 1,   // 1 for summary, 0 for simplify
+            "extractiveOrAbstractive":extractiveOrAbstractive
         }
         axios.post('http://localhost:5000/main',  dataToSummarize)
         .then(response => {
@@ -82,6 +84,10 @@ function Main() {
         setFile('');
     }
 
+    const changeSummarizationMethod = (e) => {
+        setExtractiveOrAbstractive(e.target.value);
+    };
+
   return (
     <div className="div_container">
         {fileUpload ? 
@@ -106,7 +112,31 @@ function Main() {
             <button className="button_summarize" onClick={handleSummButtonClick}>
                 Summarize
             </button>
+
+            <div>
+      <label>
+        <input
+          type="radio"
+          value='1'
+          checked={extractiveOrAbstractive == 1}
+          onChange={changeSummarizationMethod}
+        />
+        Extractive Summary
+      </label>
+      <br />
+      <label>
+        <input
+          type="radio"
+          value='0'
+          checked={extractiveOrAbstractive == 0}
+          onChange={changeSummarizationMethod}
+        />
+        Abstractive Summary
+      </label>
+    </div>
         </div>
+
+
     </div>
   );
 }
