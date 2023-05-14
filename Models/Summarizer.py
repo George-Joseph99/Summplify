@@ -297,7 +297,8 @@ def predict(model, x):
 
 
 
-def extractive_summary(article, compression_ratio = 0.35):
+def extractive_summary(article, compression_ratio):
+    print('compressed to: ', compression_ratio)
     model = model = {'W1': np.array([[ 1.29643591,  0.45074824],
        [ 0.70773118,  1.58460852],
        [ 2.67738766, -1.74837318],

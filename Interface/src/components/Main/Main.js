@@ -14,6 +14,7 @@ function Main() {
     const [file, setFile] = useState('');
     const [text, setText] = useState('');
     const [extractiveOrAbstractive, setExtractiveOrAbstractive] = useState('1');
+    const [sliderValue, setSliderValue] = useState(3);
     var files = [];
     const navigate = useNavigate();
 
@@ -43,7 +44,8 @@ function Main() {
         const dataToSummarize = {
             "text": text,
             "summarizeOrSimplify": 1,   // 1 for summary, 0 for simplify
-            "extractiveOrAbstractive":extractiveOrAbstractive
+            "extractiveOrAbstractive":extractiveOrAbstractive,
+            "compressedLength":sliderValue / 10
         }
         axios.post('http://localhost:5000/main',  dataToSummarize)
         .then(response => {
@@ -88,6 +90,10 @@ function Main() {
         setExtractiveOrAbstractive(e.target.value);
     };
 
+    const getSliderBackgroundSize = () => {
+        return { backgroundSize: `${(sliderValue * 100)/10}% 100%`};
+    };
+
   return (
     <div className="div_container">
         {fileUpload ? 
@@ -114,29 +120,25 @@ function Main() {
             </button>
 
             <div>
-      <label>
-        <input
-          type="radio"
-          value='1'
-          checked={extractiveOrAbstractive == 1}
-          onChange={changeSummarizationMethod}
-        />
-        Extractive Summary
-      </label>
-      <br />
-      <label>
-        <input
-          type="radio"
-          value='0'
-          checked={extractiveOrAbstractive == 0}
-          onChange={changeSummarizationMethod}
-        />
-        Abstractive Summary
-      </label>
-    </div>
+            <label><input type="radio" value='1' checked={extractiveOrAbstractive == 1} onChange={changeSummarizationMethod}/>
+            Extractive Summary
+            </label>
+            <br />
+            <label>
+            <input type="radio" value='0' checked={extractiveOrAbstractive == 0} onChange={changeSummarizationMethod}/>
+            Abstractive Summary
+            </label>
+            </div>
+
+            <div >
+                <label>
+                Compressed to : {sliderValue/10}
+                <input type='range' className='input_range' max={10} min={1} value={sliderValue}
+                onChange={(e) => setSliderValue(e.target.valueAsNumber)}
+                style = {getSliderBackgroundSize()}/>
+                </label>
+            </div>
         </div>
-
-
     </div>
   );
 }
