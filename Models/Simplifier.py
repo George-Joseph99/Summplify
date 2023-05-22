@@ -23,8 +23,8 @@ from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize, word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
-from pattern.text.en import pluralize, singularize, comparative, superlative, conjugate
-from pattern.text.en import tenses, INFINITIVE, PRESENT, PAST, FUTURE
+# from pattern.text.en import pluralize, singularize, comparative, superlative, conjugate
+# from pattern.text.en import tenses, INFINITIVE, PRESENT, PAST, FUTURE
 
 wiki_freq_dict = {}
 lexicon_dict = {}
@@ -53,6 +53,21 @@ def generateWikiFreqDict(text_file):
 
 wiki_freq_dict = generateWikiFreqDict("Simplifier/wiki_frequencies.txt")
 
+def generateEnglishFreqDict(text_file):
+    english_freq_dict = {}
+    with open(text_file) as f:
+        file = csv.reader(f, delimiter="\t")
+        for line in file:
+            word_freq_list = line[0].split(',') 
+            if(word_freq_list[1]=='count'): # Skip first line
+                continue
+            word = word_freq_list[0]
+            freq = word_freq_list[1]
+            english_freq_dict[word] = int(freq)
+    return english_freq_dict
+
+english_freq_dict = generateEnglishFreqDict('ngram_freq.csv')
+
 def generateLexiconDict(tsv_file):
     lexicon_dict = {}
     with open(tsv_file) as f:
@@ -68,22 +83,18 @@ lexicon_dict = generateLexiconDict('Simplifier/lexicon.tsv')
 # LS step1: Complex Word Identification
 
 def word_preceding(text, word):
-    sentences = sent_tokenize(text)
     words = []
-    for sentence in sentences:
-        words_from_sentence = word_tokenize(sentence)
-        words.extend(words_from_sentence)
-    index = words.index(word)
-    return words[index-1] if index > 0 else None
+    word_list = word_tokenize(text)
+    words.extend(word_list)
+    index = word_list.index(word)
+    return word_list[index-1] if index > 0 else None
 
 def word_following(text, word):
-    sentences = sent_tokenize(text)
     words = []
-    for sentence in sentences:
-        words_from_sentence = word_tokenize(sentence)
-        words.extend(words_from_sentence)
-    index = words.index(word)
-    return words[index+1] if index+1 < len(words) else None
+    word_list = word_tokenize(text)
+    words.extend(word_list)
+    index = word_list.index(word)
+    return word_list[index+1] if index+1 < len(word_list) else None
 
 def complexWordIdentif(article):
     threshold_scores_dict = {}
@@ -122,20 +133,16 @@ def complexWordIdentif(article):
                 if(word in wiki_freq_dict and word in lexicon_dict):
                     wiki_freq = int(wiki_freq_dict[word])
                     lexicon_score = float(lexicon_dict[word])
-    #                 print(word, wiki_freq, lexicon_score)
                     if(wiki_freq<12000 or lexicon_score>3.0):
                         threshold_scores_dict[word_]=1
                         word_sentence_dict[word_] = sentence
-
                 elif(word in wiki_freq_dict):
                     wiki_freq = int(wiki_freq_dict[word])
-    #                 print(word, wiki_freq)
                     if(wiki_freq<12000):
                         threshold_scores_dict[word_]=1
                         word_sentence_dict[word_] = sentence
                 elif(word in lexicon_dict):
                     lexicon_score = float(lexicon_dict[word])
-    #                 print(word, lexicon_score)
                     if(lexicon_score>3.0):
                         threshold_scores_dict[word_]=1
                         word_sentence_dict[word_] = sentence
@@ -322,11 +329,17 @@ def filterSubstitutions(word_subs_dict):
     wnl = WordNetLemmatizer()
     ps = PorterStemmer()
     for word in word_subs_dict:
+        cosine_sim = 0
         word_lemm = wnl.lemmatize(word.lower())
         filtered_subs_list = []
+        filtered_subs_score = []
         subs_set = word_subs_dict[word]
         if(len(subs_set)>0):
             for subs in subs_set:
+                if(word.lower() in word_vectors and subs.lower() in word_vectors):     
+                    target_word_vector = word_vectors[word.lower()]
+                    substitution_vector = word_vectors[subs.lower()]
+                    cosine_sim = getCosSim(target_word_vector,substitution_vector)
                 word_list = nltk.word_tokenize(subs)
                 word_split_hyphen = subs.split("-")
                 word_split_underscore = subs.split("_")
@@ -341,6 +354,8 @@ def filterSubstitutions(word_subs_dict):
                             break
                     if(add_word):
                         filtered_subs_list.append(subs)
+                        filtered_subs_score.append(cosine_sim)
+                        
                 elif(len(word_split_hyphen)>1):
                     add_word = True
                     for word_ in word_split_hyphen:
@@ -352,6 +367,7 @@ def filterSubstitutions(word_subs_dict):
                             break
                     if(add_word):
                         filtered_subs_list.append(subs)
+                        filtered_subs_score.append(cosine_sim)
                 elif(len(word_split_underscore)>1):
                     add_word = True
                     for word_ in word_split_underscore:
@@ -363,88 +379,138 @@ def filterSubstitutions(word_subs_dict):
                             break
                     if(add_word):
                         filtered_subs_list.append(subs)
+                        filtered_subs_score.append(cosine_sim)
                 else: 
                     subs_lemm = wnl.lemmatize(subs.lower())
                     if(ps.stem(subs.lower())!=ps.stem(word.lower()) and subs_lemm!=word_lemm and not is_similar(subs.lower(), word.lower()) and not is_similar(subs.lower(), word_lemm)
                       and not is_similar(subs_lemm, word_lemm) and not is_similar(subs_lemm, word.lower())):
                         filtered_subs_list.append(subs)
-        word_subs_dict_filtered[word] = filtered_subs_list
+                        filtered_subs_score.append(cosine_sim)
+        
+        if(len(filtered_subs_score)<10):
+            new_list = []
+            list_len = len(filtered_subs_score)
+            for i in range(list_len):
+                max_index = filtered_subs_score.index(max(filtered_subs_score))
+                new_list.append(filtered_subs_list[max_index])
+                filtered_subs_score[max_index] = -1
+        else:
+            # Get the 10 highest values
+            new_list = []
+            for i in range(10):
+                max_index = filtered_subs_score.index(max(filtered_subs_score))
+                new_list.append(filtered_subs_list[max_index])
+                # Remove the maximum value from the list
+                filtered_subs_score[max_index] = -1
+        word_subs_dict_filtered[word] = new_list
     return word_subs_dict_filtered
 
 def convertGrammStructure(word_subs_dict, word_sentence_dict):
     modified_word_subs_dict = word_subs_dict.copy()
-    for word in word_subs_dict:
-        subs_list = word_subs_dict[word]
-        word_tag = getPosTagFromSentence(word_sentence_dict[word],word)
-        word_type = getTypeFromTag(word_tag)
-        if(word_type == 'n'): #NOUNS
-            modified_subs = []
-            for subs in subs_list:
-                subs_tag = getPosTag(subs)
-                subs_type = getTypeFromTag(subs_tag)
-                if(word_tag=="NN" and subs_tag=="NNS"):
-                    new_subs = singularize(subs)
-                    modified_subs.append(new_subs)
-                elif(word_tag=="NNS" and subs_tag=="NN"):
-                    new_subs = pluralize(subs)
-                    modified_subs.append(new_subs)
-                elif((word_tag=="NNS" and subs_tag=="NNS") or (word_tag=="NN" and subs_tag=="NN")):
-                    modified_subs.append(subs)
-            modified_word_subs_dict[word] = modified_subs
-        elif(word_type == 'a'): #ADJECTIVES
-            modified_subs = []
-            for subs in subs_list:
-                subs_tag = getPosTag(subs)
-                subs_type = getTypeFromTag(subs_tag)
-                if(word_tag=="JJR" and (subs_tag=="JJS" or subs_tag=="JJ")):
-                    new_subs = comparative(subs)
-                    modified_subs.append(new_subs)
-                elif(word_tag=="JJS" and (subs_tag=="JJR" or subs_tag=="JJ")):
-                    new_subs = superlative(subs)
-                    modified_subs.append(new_subs)
-                elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
-                    modified_subs.append(subs)
-            modified_word_subs_dict[word] = modified_subs
-        elif(word_type == 'v' and word_tag !="VBD" and word_tag !="VBN"): #VERBS
-            modified_subs = []
-            try:
-                print(word)
-                print(tenses(word))
-                complex_tense = tenses(word)
-                for subs in subs_list:
-                    subs_tokens = nltk.word_tokenize(subs)
-    #                 subs_split = subs.split(" ")
-                    subs_tag = getPosTag(subs)
-                    subs_type = getTypeFromTag(subs_tag)
-                    if(word_tag=="VBD" or word_tag=="VBN"): #-->PAST
-                        if(len(subs_tokens)>1):
-                            first_half_tense = tenses(subs)
-                            if(subs_type=='v'):
-                                new_word = conjugate(subs_tokens[0], tense=PAST)
-                                subs_tokens[0] = new_word
-                                new_subs = ' '.join(subs_tokens)
-                                modified_subs.append(new_subs)
-                        else:
-                            new_subs = conjugate(subs, tense=PAST)
-                            modified_subs.append(new_subs)
-                    elif(word_tag=="VBP" or word_tag=="VBZ"): #-->PRESENT
-                        new_subs = conjugate(subs, tense=PRESENT)
-                        modified_subs.append(new_subs)
-                    elif((len(complex_tense)>0 and complex_tense[0][0]=="infinitive") or word_tag=="VBG"): #-->INFINITIVE
-                        new_subs = conjugate(subs, tense=INFINITIVE)
-                        modified_subs.append(new_subs)
-                    elif(len(complex_tense)>0 and complex_tense[0][0]=="future"): #-->FUTURE
-    #                     print(word_tag, complex_tense, complex_tense[0][0], word, "\n")
-                        new_subs = conjugate(subs, tense=FUTURE)
-                        modified_subs.append(new_subs)   
-                    else:
-                        modified_subs.append(subs)  
-                modified_word_subs_dict[word] = modified_subs
-            except StopIteration as e:
-                print("exceptionn") 
+    # for word in word_subs_dict:
+    #     subs_list = word_subs_dict[word]
+    #     word_tag = getPosTagFromSentence(word_sentence_dict[word],word)
+    #     word_type = getTypeFromTag(word_tag)
+    #     if(word_type == 'n'): #NOUNS
+    #         modified_subs = []
+    #         for subs in subs_list:
+    #             subs_tag = getPosTag(subs)
+    #             subs_type = getTypeFromTag(subs_tag)
+    #             if(word_tag=="NN" and subs_tag=="NNS"):
+    #                 new_subs = singularize(subs)
+    #                 modified_subs.append(new_subs)
+    #             elif(word_tag=="NNS" and subs_tag=="NN"):
+    #                 new_subs = pluralize(subs)
+    #                 modified_subs.append(new_subs)
+    #             elif((word_tag=="NNS" and subs_tag=="NNS") or (word_tag=="NN" and subs_tag=="NN")):
+    #                 modified_subs.append(subs)
+    #         modified_word_subs_dict[word] = modified_subs
+    #     elif(word_type == 'a'): #ADJECTIVES
+    #         modified_subs = []
+    #         for subs in subs_list:
+    #             subs_tag = getPosTag(subs)
+    #             subs_type = getTypeFromTag(subs_tag)
+    #             if(word_tag=="JJR" and (subs_tag=="JJS" or subs_tag=="JJ")):
+    #                 new_subs = comparative(subs)
+    #                 modified_subs.append(new_subs)
+    #             elif(word_tag=="JJS" and (subs_tag=="JJR" or subs_tag=="JJ")):
+    #                 new_subs = superlative(subs)
+    #                 modified_subs.append(new_subs)
+    #             elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
+    #                 modified_subs.append(subs)
+    #         modified_word_subs_dict[word] = modified_subs
+#         elif(word_type == 'v' and word_tag !="VBD" and word_tag !="VBN"): #VERBS
+#             modified_subs = []
+#             try:
+# #                 print(word)
+# #                 print(tenses(word))
+#                 complex_tense = tenses(word)
+#                 for subs in subs_list:
+#                     subs_tokens = nltk.word_tokenize(subs)
+#     #                 subs_split = subs.split(" ")
+#                     subs_tag = getPosTag(subs)
+#                     subs_type = getTypeFromTag(subs_tag)
+#                     if(word_tag=="VBD" or word_tag=="VBN"): #-->PAST
+#                         if(len(subs_tokens)>1):
+#                             first_half_tense = tenses(subs)
+#                             if(subs_type=='v'):
+#                                 new_word = conjugate(subs_tokens[0], tense=PAST)
+#                                 subs_tokens[0] = new_word
+#                                 new_subs = ' '.join(subs_tokens)
+#                                 modified_subs.append(new_subs)
+#                         else:
+#                             new_subs = conjugate(subs, tense=PAST)
+#                             modified_subs.append(new_subs)
+#                     elif(word_tag=="VBP" or word_tag=="VBZ"): #-->PRESENT
+#                         new_subs = conjugate(subs, tense=PRESENT)
+#                         modified_subs.append(new_subs)
+#                     elif((len(complex_tense)>0 and complex_tense[0][0]=="infinitive") or word_tag=="VBG"): #-->INFINITIVE
+#                         new_subs = conjugate(subs, tense=INFINITIVE)
+#                         modified_subs.append(new_subs)
+#                     elif(len(complex_tense)>0 and complex_tense[0][0]=="future"): #-->FUTURE
+#     #                     print(word_tag, complex_tense, complex_tense[0][0], word, "\n")
+#                         new_subs = conjugate(subs, tense=FUTURE)
+#                         modified_subs.append(new_subs)   
+#                     else:
+#                         modified_subs.append(subs)  
+#                 modified_word_subs_dict[word] = modified_subs
+#             except StopIteration as e:
+#                 print("exceptionn") 
     return modified_word_subs_dict
 
 # LS Step3: Substitution Ranking
+
+def generate3GramDict(filepath):
+    three_gram_dict = {}
+    max_val = 0
+    
+    with open(filepath, newline='', encoding='utf-8') as f:
+        file = csv.reader(f, delimiter="\t")
+        for line in file:
+            if(len(line)>=2):
+                phrase = line[0]
+                freq = line[2]
+                if(phrase not in three_gram_dict):
+                    three_gram_dict[phrase] = int(freq)
+                else:
+                    three_gram_dict[phrase] += int(freq)
+    
+    # Filter the dict
+    keys_tobe_removed = []
+    for key in three_gram_dict:
+        word_list = key.split()
+        freq = three_gram_dict[key]
+        if(freq>max_val):
+            max_val = freq
+        if(freq<=50 or len(word_list)>3):
+            keys_tobe_removed.append(key)
+            
+    for key in keys_tobe_removed:
+        three_gram_dict.pop(key, None)
+        
+    return three_gram_dict
+                
+three_gram_dict_google = generate3GramDict('googlebooks-eng-all-3gram-20090715-0.csv')
 
 def getNgramScore(phrase, start_year=2000, end_year=2019, corpus=26, smoothing=0):
     avg_score = 0
@@ -466,7 +532,7 @@ def getNgramScore(phrase, start_year=2000, end_year=2019, corpus=26, smoothing=0
             avg_score = total_score/len(list_flatten)
     return avg_score
             
-def extractFeaturesFromWord(target_word, three_gram_dict):
+def extractFeaturesFromWord(target_word, word_phrase_dict):
     
     # Features we have are:
     # lex_exist_flag, complexity_score, word_length, syllable_count, wiki_freq, ngram_score
@@ -476,6 +542,8 @@ def extractFeaturesFromWord(target_word, three_gram_dict):
     syllable_count = -1
     wiki_freq = -1
     ngram_score = -1
+    brown_freq = -1
+    eng_word_freq = -1
 
     
     # Before extracting features, check if it's a multi-word phrase, if so, we work on the longest word
@@ -527,22 +595,25 @@ def extractFeaturesFromWord(target_word, three_gram_dict):
     
     # Feature 5: Frequency with respect to Wiki-Frequency
     if(target_word in wiki_freq_dict):
-        wiki_freq = int(wiki_freq_dict[target_word])
+        wiki_freq = math.log(int(wiki_freq_dict[target_word]))
     else:
         wiki_freq = 0
         
     # Feature 6: Google Ngram average score
-    if(target_word in three_gram_dict):
-        three_words = three_gram_dict[target_word]
-#         for word in three_words:
-#             phrase+=word
+    if(target_word in word_phrase_dict):
+        three_words = word_phrase_dict[target_word]
         phrase = three_words[0] + " " + three_words[1] + " " + three_words[2]
-        # print("p ",phrase)
         ngram_score = getNgramScore(phrase)
+#         ngram_score = three_gram_dict.get(phrase, 0)
+        ngram_score = three_gram_dict_google.get(phrase,0)
     else:
         ngram_score = 0
+        
+    # Feature 7: Frequency with respect to English Corpus
+    eng_word_freq = english_freq_dict.get(target_word, 0)
+#     brown_freq = brown_corpus.count(target_word)
     
-    return [complexity_score, word_length, syllable_count, wiki_freq, ngram_score] 
+    return [complexity_score, word_length, syllable_count, wiki_freq, ngram_score, eng_word_freq] 
 
 # Pair wise features
 def getCosSim(vec_1, vec_2):
@@ -575,7 +646,7 @@ def predict(model, x):
     prediction = a2  
     return prediction[0]
 
-def simplify(text):
+def simplify(text, printText=False):
     
     model = {'W1': [[ 0.66145244,  0.16270804,  0.37252965,  0.84023676,  0.7127424 ,
         -0.3567563 ,  0.37010674],
@@ -602,13 +673,17 @@ def simplify(text):
        [-0.39391215]], 'W2': [[-0.02744851, -0.39425468, -0.16648875, -0.16939112, -0.13249023,
          0.03129614, -0.05804739, -0.40915087]], 'b2': [[0.34160712]]}
     
+    color_red = "\033[31m"
+    color_green = "\033[32m"
+    color_reset = "\033[0m"
+    
     num_features = 7
+    num_single_features = 6
     vowels = "aeiouAEIOU"
     prediction = []
     word_replace_dict = {}
     thresh_scores = {} 
     thresh_scores, word_sentence_dict = complexWordIdentif(text)
-#     print(word_sentence_dict)
     word_subst_dict = {}
     new_text = text # initialize the new string with the original one
     for word in word_sentence_dict:
@@ -624,21 +699,18 @@ def simplify(text):
         if(ppdb_candidates):
             word_subst_dict[word].update(ppdb_candidates)
     filtered_subs_dict = filterSubstitutions(word_subst_dict)
-#     print(word_subst_dict)
-#     print(filtered_subs_dict)
-    modified_word_subs_dict = convertGrammStructure(filtered_subs_dict, word_sentence_dict)    
-#     print(modified_word_subs_dict)
+    modified_word_subs_dict = convertGrammStructure(filtered_subs_dict, word_sentence_dict) 
     
     # EXTRACT FEATURES
     for target_word in modified_word_subs_dict:
-        three_gram_dict = {}
+        word_phrase_dict = {}
         feature_matrix = []
         cosine_similarities = []
         similarity_ratios = []
+        sem_similarity_ratios = []
         candidates = []
+        sentence = word_sentence_dict[target_word]
         candidates = modified_word_subs_dict[target_word]
-#         print(candidates)
-#         candidates = [target_word] + modified_word_subs_dict[target_word]
         if(len(candidates)>0):
             for candidate in candidates:
                 three_gram_phrase = ''
@@ -646,8 +718,8 @@ def simplify(text):
                 next_word = word_following(sentence, target_word)
                 if(prev_word and next_word):
                     three_gram_phrase = prev_word + " " + candidate + " " + next_word
-                    three_gram_dict[candidate] = [prev_word, candidate, next_word]
-                features_list = extractFeaturesFromWord(candidate, three_gram_dict)
+                    word_phrase_dict[candidate] = [prev_word, candidate, next_word]
+                features_list = extractFeaturesFromWord(candidate, word_phrase_dict)
                 if(target_word.lower() in word_vectors and candidate.lower() in word_vectors):     
                     target_word_vector = word_vectors[target_word.lower()]
                     substitution_vector = word_vectors[candidate.lower()]
@@ -659,20 +731,16 @@ def simplify(text):
                 feature_matrix.append(features_list)
             cosine_similarities = np.array(cosine_similarities).reshape(len(feature_matrix),1)
             similarity_ratios = np.array(similarity_ratios).reshape(len(feature_matrix),1)
-            X = np.hstack((feature_matrix,cosine_similarities, similarity_ratios))
+            sem_similarity_ratios = np.array(sem_similarity_ratios).reshape(len(feature_matrix),1)
+            X = np.hstack((feature_matrix,cosine_similarities))
             max_in_column = np.max(X,axis=0)
             for i in range(num_features):
                 if(max_in_column[i] != 0):
-                    X[:, i] /= max_in_column[i]
-#             print(candidates)
-#             print(X)
+                    X[:, i] = X[:, i]/max_in_column[i]
             prediction = predict(model, X)
-#             print(candidates)
-#             print(prediction)
             min_value = min(prediction)
             prediction_list = prediction.tolist()
             min_index=prediction_list.index(min_value)
-#             print(prediction_list,"\n",candidates)
             chosen_candidate = candidates[min_index]
             if(target_word[0].isupper()):
                 chosen_candidate = chosen_candidate[0].upper() + chosen_candidate[1:]
@@ -685,6 +753,22 @@ def simplify(text):
             else:
                 new_text = new_text.replace(target_word, chosen_candidate)
             word_replace_dict[target_word] = chosen_candidate
-#             print(candidates, "\n", prediction)
+
+    if(printText):
+        text_list = word_tokenize(text)
+        newtext_list = word_tokenize(new_text)
+        for word in text_list:
+            if(word in word_sentence_dict):
+                print(f"{color_red}{word}{color_reset}",end=" ")
+            else:
+                print(f"{word}",end=" ")
+        print("\n")
+        for i in range(len(text_list)):  
+            if(text_list[i] in word_sentence_dict):
+                print(f"{color_green}{newtext_list[i]}{color_reset}",end=" ")
+            else:
+                print(f"{newtext_list[i]}",end=" ")
+        print("\n")
+            
     return new_text
 
