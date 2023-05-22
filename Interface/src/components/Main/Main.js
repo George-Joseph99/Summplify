@@ -25,11 +25,7 @@ function Main() {
     const navigate = useNavigate();
 
     const handleGoButtonClick = () => {
-        if(fileUpload){
-            fetch(file)
-                .then(response => response.text())
-                .then(data => setText(data));
-        }
+        console.log(text)
         if(simIsClicked){
             const dataToSimplify = {
                 "text": text,
@@ -83,20 +79,17 @@ function Main() {
     }
 
     const handleTextInput = (e) => {
-        console.log(e.target.value);
         setText(e.target.value);
     }
 
     const handleFileUpload = (e) => {
         setFileUpload(true);
         files = e.target.files;
-        console.log(files);
         setFileName(files[0].name)
         let reader = new FileReader();
         reader.readAsDataURL(files[0]);
         reader.onload = (e) =>{
             setFile(e.target.result)
-            console.log("img data", e.target.result);
         }
     }
 
@@ -122,6 +115,14 @@ function Main() {
       const handleMouseOut = () => {
         setIsHovering(false);   
     };
+
+    useEffect(() => {
+        if(file){
+            fetch(file)
+                .then(response => response.text())
+                .then(data => setText(data));         
+        }
+      }, [file]);
 
   return (
     <div className="div_container">
