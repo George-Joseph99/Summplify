@@ -13,7 +13,7 @@ function Home() {
         </h1>
         <h2 className="homeHeader2">Condensing Complexity for Clarity</h2>
         <div className='div_button'>
-        <a href='/main' className="a_Home" >Let's Go</a>
+        <a href='/main' className="a_Home" >Let's Start</a>
         </div>
         <div className="imgBg">
           <img src={img} className="img_Home"></img>

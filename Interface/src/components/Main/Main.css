@@ -1,8 +1,8 @@
 .input_textarea{
     position: absolute;
-    height: 540px;
+    height: 510px;
     width: 1100px;
-    margin-top: -20px;
+    margin-top: -30px;
     padding-top: 20px;
     padding-bottom: 20px;
     padding-left: 20px;
@@ -16,9 +16,9 @@
 
 .void_textarea{
     position: absolute;
-    height: 540px;
+    height: 510px;
     width: 1100px;
-    margin-top: -20px;
+    margin-top: -30px;
     padding-top: 20px;
     padding-bottom: 20px;
     padding-left: 20px;
@@ -31,9 +31,9 @@
 
 .div_textarea{
     position: absolute;
-    height: 540px;
+    height: 510px;
     width: 1100px;
-    margin-top: -20px;
+    margin-top: -30px;
     padding-top: 20px;
     padding-bottom: 20px;
     padding-left: 20px;
@@ -45,7 +45,7 @@
 }
 
 .p_filenName{
-    color: rgb(2, 2, 2);
+    color: white;
     position: relative;
     width: 650px;
     left: 220px;
@@ -81,6 +81,28 @@
     margin-top: 640px;
     margin-left: -30%;
     /* margin-left: 600px; */
+}
+
+.div_methods{
+    position: absolute;
+    margin-top: 640px;
+    margin-left: 38%;
+    background: #b56ae036;
+    border: #a87cff5b solid;
+    color: rgba(244, 243, 243, 0.777);
+    font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.div_compression{
+    position: relative;
+}
+
+.input_button1{
+    position: relative;
+}
+
+.input_button2{
+    position: relative;
 }
 
 .label_file{
@@ -130,6 +152,18 @@
     transition: 0.6s;
 }
 
+.button_simplify_colored{
+    width: 120px;
+    height: 50px;
+    border-radius: 10px;
+    background-color: #d2d2d2 ;
+    border: #d2d2d2 solid;
+    font-size: large;
+    color: black;
+    margin-right: 3px;
+    font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif; 
+}
+
 .button_summarize{
     position: absolute;
     margin-left: 10px;
@@ -149,6 +183,52 @@
     transition: 0.6s;
 }
 
+.button_summarize_colored{
+    position: absolute;
+    margin-left: 10px;
+    width: 120px;
+    height: 50px;
+    background-color: #ca28a1;
+    border: #ca28a1 solid;
+    border-radius: 10px;
+    font-size: large;
+    color: whitesmoke;
+    font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif; 
+}
+
+.button_go{
+    position: absolute;
+    margin-left: 10px;
+    width: 90px;
+    height: 40px;
+    /* background-color: rgba(245, 245, 245, 0.7);  */
+    border: white;
+    border-radius: 10px;
+    font-size: 25px;
+    font-weight: 600;
+    color: #ffffff;
+    /* color: #f70088; */
+    font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif; 
+    margin-top: -650px;
+    margin-left: 950px;
+    transition: 0.3s;
+    background: linear-gradient(to bottom left, #a46fc3, #c86cab, #dfcee3);
+}
+
+.button_go:hover{
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.icon_write{
+    position: relative;
+    top: 3px;
+    left: 3px; 
+    font-weight: 700;
+}
+
 .icon_upload{
     font-weight: 420;
     position: relative;
@@ -163,7 +243,7 @@
 }
 
 .icon_delete{
-    color: black;
+    color: rgba(255, 255, 255, 0.688);
     position: relative;
     top: 3px;
     left: 500px;
