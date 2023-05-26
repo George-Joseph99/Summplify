@@ -544,6 +544,7 @@ def extractFeaturesFromWord(target_word, word_phrase_dict):
     ngram_score = -1
     brown_freq = -1
     eng_word_freq = -1
+    sem_ratio = -1
 
     
     # Before extracting features, check if it's a multi-word phrase, if so, we work on the longest word
@@ -594,8 +595,8 @@ def extractFeaturesFromWord(target_word, word_phrase_dict):
     syllable_count = syllables.estimate(target_word)     
     
     # Feature 5: Frequency with respect to Wiki-Frequency
-    if(target_word in wiki_freq_dict):
-        wiki_freq = math.log(int(wiki_freq_dict[target_word]))
+    if(target_word.lower() in wiki_freq_dict):
+        wiki_freq = int(wiki_freq_dict[target_word.lower()])
     else:
         wiki_freq = 0
         
@@ -603,9 +604,9 @@ def extractFeaturesFromWord(target_word, word_phrase_dict):
     if(target_word in word_phrase_dict):
         three_words = word_phrase_dict[target_word]
         phrase = three_words[0] + " " + three_words[1] + " " + three_words[2]
-        ngram_score = getNgramScore(phrase)
-#         ngram_score = three_gram_dict.get(phrase, 0)
-        ngram_score = three_gram_dict_google.get(phrase,0)
+#         ngram_score = three_gram_dict_google.get(phrase,0)
+#         ngram_score = getNgramScore(phrase)*pow(10,9)
+#         ngram_score = getThreeGramFreq(phrase)
     else:
         ngram_score = 0
         
@@ -613,7 +614,7 @@ def extractFeaturesFromWord(target_word, word_phrase_dict):
     eng_word_freq = english_freq_dict.get(target_word, 0)
 #     brown_freq = brown_corpus.count(target_word)
     
-    return [complexity_score, word_length, syllable_count, wiki_freq, ngram_score, eng_word_freq] 
+    return [complexity_score, word_length, syllable_count, wiki_freq, eng_word_freq] 
 
 # Pair wise features
 def getCosSim(vec_1, vec_2):
@@ -646,44 +647,91 @@ def predict(model, x):
     prediction = a2  
     return prediction[0]
 
+def getDefinitions(word_cand_list,word_sentence_dict):
+    
+    equiv_tag_dict = {'r':'adv', 'n':'n', 'v':'v', 'a':'adj'}
+    
+    definitions = []
+    
+    for pair in word_cand_list:
+        text = ''
+        definition = ''
+        optional_def = ''
+        target_word = pair[0]
+        word_sentence = word_sentence_dict[target_word]
+        word_tag = getPosTagFromSentence(word_sentence, target_word)
+        word_type = getTypeFromTag(word_tag)
+        check_tag = equiv_tag_dict.get(word_type, word_type)
+        candidate = pair[1]
+        url = f"https://api.datamuse.com/words?sp={target_word}&md=d"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            if(data and 'defs' in data[0]):
+                for definition in data[0]['defs']:
+                    tag_def_list = definition.split('\t')
+                    if(tag_def_list[0] == check_tag):
+                        definition = tag_def_list[1]
+                        break
+                if(len(data[0]['defs'])>0 and definition==''): # If we had definitions but no one was chosen (select the first one)
+                    definition = data[0]['defs'][0].split('\t')[1]
+        if(len(definition.split('\t'))>1):
+            definition = definition.split('\t')[1]
+            
+        if(definition and definition[0]=='('):
+            definition = re.sub(r'\([^)]*\)', '', definition, 1)
+                
+        if(target_word and candidate and definition):
+            text = target_word + " (replaced with " + candidate + ") is: " + definition.lower()
+        elif(target_word and definition):
+            text = target_word + " is: " + definition.lower()
+            
+        if(text):
+            definitions.append(text)
+        
+    return definitions
+
 def simplify(text, printText=False):
     
-    model = {'W1': [[ 0.66145244,  0.16270804,  0.37252965,  0.84023676,  0.7127424 ,
-        -0.3567563 ,  0.37010674],
-       [-0.04221344,  0.04851904,  0.12056598,  0.15521051,  0.60280313,
-         0.31525486,  0.1044011 ],
-       [ 0.16965626,  0.17308712,  0.52687586, -0.0186932 ,  0.26320379,
-        -0.29983551, -0.92539477],
-       [ 0.15125279,  0.27851575, -0.37832276,  0.86823293, -0.4259034 ,
-         0.03437329, -0.06773697],
-       [ 0.57883909,  0.56154123,  0.04959171,  0.09650677, -0.27608262,
-        -0.73508525, -0.11209866],
-       [ 0.03722021,  0.41981163,  0.43454857, -0.15009002, -0.14776318,
-        -0.40222456, -0.55945027],
-       [-0.66710857,  0.69112549, -0.24370165, -0.13958974, -0.43323821,
-         0.30040376, -0.62147804],
-       [-0.16938653, -0.51091617, -0.0947284 , -0.20217333, -0.25982684,
-         0.01728051,  0.153387  ]], 'b1': [[ 0.01014841],
-       [-0.04420122],
-       [-0.1130388 ],
-       [-0.12162635],
-       [-0.05295276],
-       [-0.00409472],
-       [-0.08975829],
-       [-0.39391215]], 'W2': [[-0.02744851, -0.39425468, -0.16648875, -0.16939112, -0.13249023,
-         0.03129614, -0.05804739, -0.40915087]], 'b2': [[0.34160712]]}
+    model = {'W1': [[ 0.59379275,  0.10573328,  0.3333015 ,  0.92123417,  0.67295641,
+        -0.35045897],
+       [ 0.38686119, -0.05986339, -0.06105094,  0.20350073,  0.04233106,
+         0.59301918],
+       [ 0.19332279,  0.00160017,  0.08232089,  0.22751841,  0.50550375,
+        -0.06886701],
+       [ 0.08795559, -0.36734301, -1.04466844,  0.22720356,  0.37344396,
+        -0.29992849],
+       [ 0.92379904, -0.62224386,  0.01826949, -0.1278862 ,  0.63526898,
+         0.58802669],
+       [-0.19257993, -0.03247628, -0.5495473 , -0.80284288, -0.31687566,
+         0.08342405],
+       [ 0.45730753,  0.41172155, -0.21174458, -0.24380291, -0.44752727,
+        -0.59411973],
+       [-0.65819502,  0.82130702, -0.17795647, -0.1987479 , -0.49519112,
+         0.32212151]], 'b1': [[-0.09245627],
+       [-0.01986108],
+       [-0.16607081],
+       [ 0.00942408],
+       [-0.01498752],
+       [-0.31538165],
+       [-0.01910803],
+       [ 0.0653324 ]], 'W2': [[-0.20134495, -0.19306152, -0.30827815,  0.09302178,  0.16951155,
+        -0.3618528 ,  0.06294159,  0.04406287]], 'b2': [[0.40915099]]}
     
     color_red = "\033[31m"
     color_green = "\033[32m"
     color_reset = "\033[0m"
     
-    num_features = 7
-    num_single_features = 6
+    num_features = 6
+    num_single_features = 5
     vowels = "aeiouAEIOU"
     prediction = []
+    definitions = []
+    word_cand_list = []
     word_replace_dict = {}
     thresh_scores = {} 
     thresh_scores, word_sentence_dict = complexWordIdentif(text)
+#     print(word_sentence_dict)
     word_subst_dict = {}
     new_text = text # initialize the new string with the original one
     for word in word_sentence_dict:
@@ -699,7 +747,10 @@ def simplify(text, printText=False):
         if(ppdb_candidates):
             word_subst_dict[word].update(ppdb_candidates)
     filtered_subs_dict = filterSubstitutions(word_subst_dict)
+#     print(word_subst_dict)
+#     print(filtered_subs_dict)
     modified_word_subs_dict = convertGrammStructure(filtered_subs_dict, word_sentence_dict) 
+#     print(modified_word_subs_dict)
     
     # EXTRACT FEATURES
     for target_word in modified_word_subs_dict:
@@ -711,6 +762,8 @@ def simplify(text, printText=False):
         candidates = []
         sentence = word_sentence_dict[target_word]
         candidates = modified_word_subs_dict[target_word]
+#         print(candidates)
+#         candidates = [target_word] + modified_word_subs_dict[target_word]
         if(len(candidates)>0):
             for candidate in candidates:
                 three_gram_phrase = ''
@@ -727,6 +780,7 @@ def simplify(text, printText=False):
                 else:
                     cos_similarity = 0
                 similarity_ratios.append(similarityRatio(target_word.lower(), candidate.lower()))
+                sem_similarity_ratios.append(semanticSimilarityRatio(target_word.lower(), candidate.lower()))
                 cosine_similarities.append(cos_similarity)
                 feature_matrix.append(features_list)
             cosine_similarities = np.array(cosine_similarities).reshape(len(feature_matrix),1)
@@ -737,11 +791,17 @@ def simplify(text, printText=False):
             for i in range(num_features):
                 if(max_in_column[i] != 0):
                     X[:, i] = X[:, i]/max_in_column[i]
+#             print(candidates)
+#             print(X)
             prediction = predict(model, X)
+#             print(candidates)
+#             print(prediction)
             min_value = min(prediction)
             prediction_list = prediction.tolist()
             min_index=prediction_list.index(min_value)
+#             print(prediction_list,"\n",candidates)
             chosen_candidate = candidates[min_index]
+            word_cand_list.append((target_word, chosen_candidate))
             if(target_word[0].isupper()):
                 chosen_candidate = chosen_candidate[0].upper() + chosen_candidate[1:]
             if(target_word.isupper()):
@@ -753,6 +813,11 @@ def simplify(text, printText=False):
             else:
                 new_text = new_text.replace(target_word, chosen_candidate)
             word_replace_dict[target_word] = chosen_candidate
+#             print(len(text), len(new_text))
+        else:
+            word_cand_list.append((target_word, ''))
+
+    definitions = getDefinitions(word_cand_list,word_sentence_dict)
 
     if(printText):
         text_list = word_tokenize(text)
@@ -770,5 +835,5 @@ def simplify(text, printText=False):
                 print(f"{newtext_list[i]}",end=" ")
         print("\n")
             
-    return new_text
+    return new_text,definitions
 
