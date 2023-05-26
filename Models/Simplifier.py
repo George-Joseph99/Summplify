@@ -5,7 +5,7 @@ import csv
 import pandas as pd
 import nltk
 import re
-# import requests
+import requests
 import syllables
 import enchant
 import gensim.downloader as api
@@ -53,20 +53,33 @@ def generateWikiFreqDict(text_file):
 
 wiki_freq_dict = generateWikiFreqDict("Simplifier/wiki_frequencies.txt")
 
-def generateEnglishFreqDict(text_file):
-    english_freq_dict = {}
-    with open(text_file) as f:
-        file = csv.reader(f, delimiter="\t")
-        for line in file:
-            word_freq_list = line[0].split(',') 
-            if(word_freq_list[1]=='count'): # Skip first line
-                continue
-            word = word_freq_list[0]
-            freq = word_freq_list[1]
-            english_freq_dict[word] = int(freq)
-    return english_freq_dict
+# def generateEnglishFreqDict(text_file):
+#     english_freq_dict = {}
+#     with open(text_file) as f:
+#         file = csv.reader(f, delimiter="\t")
+#         for line in file:
+#             word_freq_list = line[0].split(',') 
+#             if(word_freq_list[1]=='count'): # Skip first line
+#                 continue
+#             word = word_freq_list[0]
+#             freq = word_freq_list[1]
+#             english_freq_dict[word] = int(freq)
+#     return english_freq_dict
 
-english_freq_dict = generateEnglishFreqDict('ngram_freq.csv')
+def read_csv_file(csv_file):
+    df = pd.read_csv(csv_file)
+    return df
+
+def retrieve_from_df(df, word):
+    filtered_df = df.loc[df['word'] == word]
+    if filtered_df.empty == False:
+        return filtered_df.iloc[0]['count']
+    return 0
+
+ngram_freq_df = read_csv_file('Simplifier/ngram_freq.csv')
+
+
+# english_freq_dict = generateEnglishFreqDict('ngram_freq.csv')
 
 def generateLexiconDict(tsv_file):
     lexicon_dict = {}
@@ -510,7 +523,7 @@ def generate3GramDict(filepath):
         
     return three_gram_dict
                 
-three_gram_dict_google = generate3GramDict('googlebooks-eng-all-3gram-20090715-0.csv')
+# three_gram_dict_google = generate3GramDict('googlebooks-eng-all-3gram-20090715-0.csv')
 
 def getNgramScore(phrase, start_year=2000, end_year=2019, corpus=26, smoothing=0):
     avg_score = 0
@@ -611,7 +624,8 @@ def extractFeaturesFromWord(target_word, word_phrase_dict):
         ngram_score = 0
         
     # Feature 7: Frequency with respect to English Corpus
-    eng_word_freq = english_freq_dict.get(target_word, 0)
+    # eng_word_freq = english_freq_dict.get(target_word, 0)
+    eng_word_freq = retrieve_from_df(ngram_freq_df, target_word) 
 #     brown_freq = brown_corpus.count(target_word)
     
     return [complexity_score, word_length, syllable_count, wiki_freq, eng_word_freq] 
@@ -780,12 +794,12 @@ def simplify(text, printText=False):
                 else:
                     cos_similarity = 0
                 similarity_ratios.append(similarityRatio(target_word.lower(), candidate.lower()))
-                sem_similarity_ratios.append(semanticSimilarityRatio(target_word.lower(), candidate.lower()))
+                # sem_similarity_ratios.append(semanticSimilarityRatio(target_word.lower(), candidate.lower()))
                 cosine_similarities.append(cos_similarity)
                 feature_matrix.append(features_list)
             cosine_similarities = np.array(cosine_similarities).reshape(len(feature_matrix),1)
             similarity_ratios = np.array(similarity_ratios).reshape(len(feature_matrix),1)
-            sem_similarity_ratios = np.array(sem_similarity_ratios).reshape(len(feature_matrix),1)
+            # sem_similarity_ratios = np.array(sem_similarity_ratios).reshape(len(feature_matrix),1)
             X = np.hstack((feature_matrix,cosine_similarities))
             max_in_column = np.max(X,axis=0)
             for i in range(num_features):

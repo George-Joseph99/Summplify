@@ -7,16 +7,17 @@ import './Output.css'
 import { List, Card, Button } from 'antd';
 import { useSearchParams } from 'react-router-dom';
 import Search from 'antd/es/transfer/search';
+import { useLocation } from 'react-router-dom';
 
 function Output() {
     const [searchparams] = useSearchParams();
-    console.log(searchparams.get("text"))
-    // const text = navigate.state?.data || '';
+    const location = useLocation();
+    const received_data = location.state;
+    console.log(received_data);
 
     const [fileUpload, setFileUpload] = useState(false);
     const [fileName, setFileName] = useState('');
     const [file, setFile] = useState('');
-    // const [text, setText] = useState('');
     var files = [];
 
     // useEffect(() => {
@@ -35,6 +36,12 @@ function Output() {
     //     setText(e.target.value);
     // }
 
+    let textAndDetails = [];
+    if (Array.isArray(received_data)) {
+      textAndDetails = received_data;
+    } else {
+      textAndDetails = [received_data];
+    }
 
     const handleDeleteIconClick = () => {
         setFileName('');
@@ -42,9 +49,15 @@ function Output() {
         setFile('');
     }
 
+
   return (
     <div className="div_container">
-      <p className="p_output">{searchparams.get("text")}</p>
+    {
+      textAndDetails.map((item, index) => (
+        <p className="p_output" key={index}>{item}</p>
+      ))
+    }
+
     </div>
   );
 }

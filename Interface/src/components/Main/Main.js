@@ -7,6 +7,7 @@ import {TfiWrite} from "react-icons/tfi";
 import './Main.css';
 import { List, Card, Button } from 'antd';
 import { createSearchParams, useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 function Main() {
 
@@ -34,12 +35,10 @@ function Main() {
             axios.post('http://localhost:5000/main',  dataToSimplify)
             .then(response => {
             console.log(response.data);
-            navigate({
-                pathname : "/output",
-                search: createSearchParams({
-                    text : response.data
-                }).toString()
-                })
+            navigate('/output', 
+                {state: simplified_data}
+            )
+            
             })
             .catch(error => {
             console.log(error);
@@ -55,12 +54,9 @@ function Main() {
             axios.post('http://localhost:5000/main',  dataToSummarize)
             .then(response => {
             console.log(response.data);
-            navigate({
-                pathname : "/output",
-                search: createSearchParams({
-                    text : response.data
-                }).toString()
-                })
+            navigate('/output', 
+                {state: response.data}
+            )
             })
             .catch(error => {
             console.log(error);
