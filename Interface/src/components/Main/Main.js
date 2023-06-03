@@ -35,6 +35,8 @@ function Main() {
             axios.post('http://localhost:5000/main',  dataToSimplify)
             .then(response => {
             console.log(response.data);
+
+            const simplified_data = response.data
             navigate('/output', 
                 {state: simplified_data}
             )
