@@ -5,10 +5,6 @@ from Models import *
 app = Flask(__name__)
 CORS(app)
 
-# @app.route("/members")
-# def members():
-#     return {"members" : ["Member1", "Member2", "Member3"]}
-
 
 @app.route('/main', methods=['POST'])
 def receive_text():
@@ -26,21 +22,15 @@ def receive_text():
             output_text = Summarizer.abstrctive_summary(text)
             print(output_text)
     elif summary_or_simplify == 0:
-        output_text = Simplifier.simplify(text)
+        output_text, details = Simplifier.simplify(text)
         print(output_text)
+        print(details)
+        simplified_data = []
+        simplified_data.append(output_text)
+        for detail in details:
+            simplified_data.append(detail)
+        return jsonify(simplified_data)
     return output_text
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
-# from flask import Flask
-
-# app = Flask(__name__)
-
-# @app.route("/members")
-# def members():
-#     return {"members": ["Member1", "Member2", "Member3"]}
-
-# if __name__ == "__main__":
-#     app.run(debug=True)
