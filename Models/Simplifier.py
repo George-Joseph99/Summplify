@@ -93,6 +93,45 @@ def generateLexiconDict(tsv_file):
 
 lexicon_dict = generateLexiconDict('Simplifier/lexicon.tsv')
 
+def generateIrregularVerbsDict(text_file):
+    base_form_dict = {}
+    past_tense_dict = {}
+    past_participle_dict = {}
+    with open(text_file, encoding='utf8') as f:
+        for line in f.readlines():
+            base,past,past_participle = line.strip().split(",")
+            base_list = base.split("/")
+            past_list = past.split("/")
+            past_partic_list = past_participle.split("/")
+            if(len(base_list)>1 or len(past_list)>1 or len(past_partic_list)>1):
+                for b in base_list:
+                    for p in past_list:
+                        for pp in past_partic_list:
+                            base_form_dict[b] = [b,past,past_participle]
+                            past_tense_dict[p] = [base,p,past_participle]
+                            past_participle_dict[pp] = [base,past,pp]
+            else:
+                base_form_dict[base] = [base,past,past_participle]
+                past_tense_dict[past] = [base,past,past_participle]
+                past_participle_dict[past_participle] = [base,past,past_participle]
+    return base_form_dict,past_tense_dict,past_participle_dict
+
+base_form_dict,past_tense_dict,past_participle_dict = generateIrregularVerbsDict("irregular_verbs.txt")
+
+def has_special_characters(string):
+    pattern = r'[^\w\s]'
+    if re.search(pattern, string):
+        return True
+    else:
+        return False
+    
+def has_number(string):
+    pattern = r'\d'
+    if re.search(pattern, string):
+        return True
+    else:
+        return False
+
 # LS step1: Complex Word Identification
 
 def word_preceding(text, word):
@@ -195,7 +234,6 @@ def getTypeFromTag(tag):
         return tag
     
 # Word Net Synonyms
-
 def getSynWordNet(complex_word):
     synonyms = []
     for synset in wordnet.synsets(complex_word):
@@ -204,7 +242,6 @@ def getSynWordNet(complex_word):
     return list(set(synonyms))
 
 # Word Net Synonyms with specific pos tag
-
 def getSynWordNetSpec(complex_word, pos_tag):
     synonyms = []
     for synset in wordnet.synsets(complex_word):
@@ -214,12 +251,10 @@ def getSynWordNetSpec(complex_word, pos_tag):
     return list(set(synonyms))
 
 # BigHuge thesaurus
-
 def getSynBigHuge(complex_word):
     bighuge_synonyms = []
     r = requests.get(url='http://words.bighugelabs.com/api/2/'+BIGHUGE_KEY+'/'+complex_word+'/json')  
     if(r.status_code!=404 and r.status_code!=500):
-#         print(type(r.json()),"\n",r.json())
         if(type(r.json()) is dict):
             synonym_dict = r.json()
             for key in synonym_dict: # key may be: noun/verb/adjective/adverb
@@ -249,7 +284,6 @@ def getSynBigHugeSpec(complex_word, pos_tag):
     return bighuge_synonyms
 
 # OpenOffice thesaurus
-
 # This generates a dictionary "thesaurus" with (word,pos) as the key and a set of synonyms as the value
 # For example:
 # thesaurus[("happy","adj")] = {'glad', 'pleased', 'prosperous', 'cheerful', ... }
@@ -274,8 +308,8 @@ def generateTheSaurusDict():
                     if(synonym not in thesaurus[(word,pos)] and synonym!=word):
                         thesaurus[(word,pos)].add(synonym)
     return thesaurus
-# PPDB dictionary
 
+# PPDB dictionary
 def genPPDBdict(file_path):
     ppdb_dict = {}
     with open(file_path) as f:
@@ -312,7 +346,6 @@ def genSubstitutionSpec(complex_word, sentence):
     word_type = getTypeFromTag(pos_tag)
     wordnet_candidates = getSynWordNetSpec(complex_word.lower(), word_type)
     flat_syn_list, bighuge_dict = [],{}
-#     flat_syn_list, bighuge_dict = getSynBigHuge(complex_word)
     if(complex_word.lower() in ppdb):
         ppdb_candidates = ppdb[complex_word.lower()]
     if(flat_syn_list and not bighuge_dict):
@@ -336,6 +369,17 @@ def genSubstitutionSpec(complex_word, sentence):
 
     return wordnet_candidates, thesaurus_candidates, bighuge_candidates, ppdb_candidates
 
+def getPathSimilarity(word_1, word_2):
+    w1_synsets = wordnet.synsets(word_1)
+    w2_synsets = wordnet.synsets(word_2)
+    total_score = 0
+    max_sim = 0
+    for w1_synset in w1_synsets:
+        for w2_synset in w2_synsets:
+            similarity = w1_synset.path_similarity(w2_synset)
+            if similarity is not None and similarity>max_sim:
+                max_sim = similarity
+    return max_sim
 
 def filterSubstitutions(word_subs_dict):
     word_subs_dict_filtered = {}
@@ -346,9 +390,13 @@ def filterSubstitutions(word_subs_dict):
         word_lemm = wnl.lemmatize(word.lower())
         filtered_subs_list = []
         filtered_subs_score = []
+        wup_score = []
         subs_set = word_subs_dict[word]
         if(len(subs_set)>0):
             for subs in subs_set:
+                if(subs.lower() == word.lower()):
+                    continue
+                path_sim = getPathSimilarity(word,subs)
                 if(word.lower() in word_vectors and subs.lower() in word_vectors):     
                     target_word_vector = word_vectors[word.lower()]
                     substitution_vector = word_vectors[subs.lower()]
@@ -400,99 +448,167 @@ def filterSubstitutions(word_subs_dict):
                         filtered_subs_list.append(subs)
                         filtered_subs_score.append(cosine_sim)
         
-        if(len(filtered_subs_score)<10):
+        if(len(filtered_subs_score)<=5):
             new_list = []
             list_len = len(filtered_subs_score)
             for i in range(list_len):
-                max_index = filtered_subs_score.index(max(filtered_subs_score))
-                new_list.append(filtered_subs_list[max_index])
-                filtered_subs_score[max_index] = -1
+                if(filtered_subs_score[i]>0.1):
+                    new_list.append(filtered_subs_list[i])
         else:
-            # Get the 10 highest values
             new_list = []
-            for i in range(10):
-                max_index = filtered_subs_score.index(max(filtered_subs_score))
-                new_list.append(filtered_subs_list[max_index])
-                # Remove the maximum value from the list
-                filtered_subs_score[max_index] = -1
+            for i in range(len(filtered_subs_score)):
+                if(filtered_subs_score[i]>=0.42):
+                    new_list.append(filtered_subs_list[i])
         word_subs_dict_filtered[word] = new_list
     return word_subs_dict_filtered
 
 def convertGrammStructure(word_subs_dict, word_sentence_dict):
     modified_word_subs_dict = word_subs_dict.copy()
-    # for word in word_subs_dict:
-    #     subs_list = word_subs_dict[word]
-    #     word_tag = getPosTagFromSentence(word_sentence_dict[word],word)
-    #     word_type = getTypeFromTag(word_tag)
-    #     if(word_type == 'n'): #NOUNS
-    #         modified_subs = []
-    #         for subs in subs_list:
-    #             subs_tag = getPosTag(subs)
-    #             subs_type = getTypeFromTag(subs_tag)
-    #             if(word_tag=="NN" and subs_tag=="NNS"):
-    #                 new_subs = singularize(subs)
-    #                 modified_subs.append(new_subs)
-    #             elif(word_tag=="NNS" and subs_tag=="NN"):
-    #                 new_subs = pluralize(subs)
-    #                 modified_subs.append(new_subs)
-    #             elif((word_tag=="NNS" and subs_tag=="NNS") or (word_tag=="NN" and subs_tag=="NN")):
-    #                 modified_subs.append(subs)
-    #         modified_word_subs_dict[word] = modified_subs
-    #     elif(word_type == 'a'): #ADJECTIVES
-    #         modified_subs = []
-    #         for subs in subs_list:
-    #             subs_tag = getPosTag(subs)
-    #             subs_type = getTypeFromTag(subs_tag)
-    #             if(word_tag=="JJR" and (subs_tag=="JJS" or subs_tag=="JJ")):
-    #                 new_subs = comparative(subs)
-    #                 modified_subs.append(new_subs)
-    #             elif(word_tag=="JJS" and (subs_tag=="JJR" or subs_tag=="JJ")):
-    #                 new_subs = superlative(subs)
-    #                 modified_subs.append(new_subs)
-    #             elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
-    #                 modified_subs.append(subs)
-    #         modified_word_subs_dict[word] = modified_subs
-#         elif(word_type == 'v' and word_tag !="VBD" and word_tag !="VBN"): #VERBS
-#             modified_subs = []
-#             try:
-# #                 print(word)
-# #                 print(tenses(word))
-#                 complex_tense = tenses(word)
-#                 for subs in subs_list:
-#                     subs_tokens = nltk.word_tokenize(subs)
-#     #                 subs_split = subs.split(" ")
-#                     subs_tag = getPosTag(subs)
-#                     subs_type = getTypeFromTag(subs_tag)
-#                     if(word_tag=="VBD" or word_tag=="VBN"): #-->PAST
-#                         if(len(subs_tokens)>1):
-#                             first_half_tense = tenses(subs)
-#                             if(subs_type=='v'):
-#                                 new_word = conjugate(subs_tokens[0], tense=PAST)
-#                                 subs_tokens[0] = new_word
-#                                 new_subs = ' '.join(subs_tokens)
-#                                 modified_subs.append(new_subs)
-#                         else:
-#                             new_subs = conjugate(subs, tense=PAST)
-#                             modified_subs.append(new_subs)
-#                     elif(word_tag=="VBP" or word_tag=="VBZ"): #-->PRESENT
-#                         new_subs = conjugate(subs, tense=PRESENT)
-#                         modified_subs.append(new_subs)
-#                     elif((len(complex_tense)>0 and complex_tense[0][0]=="infinitive") or word_tag=="VBG"): #-->INFINITIVE
-#                         new_subs = conjugate(subs, tense=INFINITIVE)
-#                         modified_subs.append(new_subs)
-#                     elif(len(complex_tense)>0 and complex_tense[0][0]=="future"): #-->FUTURE
-#     #                     print(word_tag, complex_tense, complex_tense[0][0], word, "\n")
-#                         new_subs = conjugate(subs, tense=FUTURE)
-#                         modified_subs.append(new_subs)   
-#                     else:
-#                         modified_subs.append(subs)  
-#                 modified_word_subs_dict[word] = modified_subs
-#             except StopIteration as e:
-#                 print("exceptionn") 
+    for word in word_subs_dict:
+        subs_list = word_subs_dict[word]
+        word_tag = getPosTagFromSentence(word_sentence_dict[word],word)
+        word_type = getTypeFromTag(word_tag)
+        if(word_type == 'n'): #NOUNS
+            modified_subs = []
+            for subs in subs_list:
+                subs_tag = getPosTag(subs)
+                subs_type = getTypeFromTag(subs_tag)
+                if(word_tag=="NN" and subs_tag=="NNS"):
+                    new_subs = singularize(subs)
+                    modified_subs.append(new_subs)
+                elif(word_tag=="NNS" and subs_tag=="NN"):
+                    new_subs = pluralize(subs)
+                    modified_subs.append(new_subs)
+                elif((word_tag=="NNS" and subs_tag=="NNS") or (word_tag=="NN" and subs_tag=="NN")):
+                    modified_subs.append(subs)
+            modified_word_subs_dict[word] = modified_subs
+        elif(word_type == 'a'): #ADJECTIVES
+            modified_subs = []
+            for subs in subs_list:
+                subs_tag = getPosTag(subs)
+                subs_type = getTypeFromTag(subs_tag)
+                if(word_tag=="JJR" and (subs_tag=="JJS" or subs_tag=="JJ")):
+                    new_subs = comparative(subs)
+                    modified_subs.append(new_subs)
+                elif(word_tag=="JJS" and (subs_tag=="JJR" or subs_tag=="JJ")):
+                    new_subs = superlative(subs)
+                    modified_subs.append(new_subs)
+                elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
+                    modified_subs.append(subs)
+            modified_word_subs_dict[word] = modified_subs
+        elif(word_type == 'v'): #VERBS
+            # Dicts for irregular verbs:
+            # base_form_dict,past_tense_dict,past_participle_dict
+            modified_subs = []
+            stemmer = PorterStemmer()
+            lemmatizer = WordNetLemmatizer()
+            for subs in subs_list:
+                subs_tag = getPosTag(subs)
+                subs_type = getTypeFromTag(subs_tag)
+                new_subs = None
+                if(subs in base_form_dict or subs in past_tense_dict or subs in past_participle_dict): # irregular verb
+                    regular_verb = False
+                else:
+                    regular_verb = True
+                if(word_tag == "VB" and word_tag != subs_tag): # base form or simple present tense
+                    if(regular_verb and subs[-2:]!="ed"):
+                        new_subs = lemmatizer.lemmatize(subs) 
+                    elif(regular_verb and subs[-2:]=="ed"):  
+                        new_subs = stemmer.stem(subs) 
+                    else:
+                        if(subs in past_tense_dict):
+                            tenses_list = past_tense_dict[subs]
+                            base_form = tenses_list[0]
+                            if(len(base_form.split("/"))>1): # have/has
+                                new_subs = base_form.split("/")[0]
+                            else:
+                                new_subs = base_form
+                        elif(subs in past_participle_dict):
+                            tenses_list = past_participle_dict[subs]
+                            base_form = tenses_list[0]
+                            if(len(base_form.split("/"))>1): # have/has
+                                new_subs = base_form.split("/")[0]
+                            else:
+                                new_subs = base_form
+                elif(word_tag == "VBP" and word_tag != subs_tag): # present tense, non 3rd person singular 
+                    if(regular_verb and subs[-2:]!="ed"):
+                        new_subs = lemmatizer.lemmatize(subs) 
+                    elif(regular_verb and subs[-2:]=="ed"):
+                        new_subs = stemmer.stem(subs) 
+                    else:
+                        if(subs in past_tense_dict):
+                            tenses_list = past_tense_dict[subs]
+                            base_form = tenses_list[0]
+                            if(len(base_form.split("/"))>1): # have/has
+                                new_subs = base_form.split("/")[0]
+                            else:
+                                new_subs = base_form
+                        elif(subs in past_participle_dict):
+                            tenses_list = past_participle_dict[subs]
+                            base_form = tenses_list[0]
+                            if(len(base_form.split("/"))>1): # have/has
+                                new_subs = base_form.split("/")[0]
+                            else:
+                                new_subs = base_form
+                elif(word_tag == "VBZ" and word_tag != subs_tag): # present tense, 3rd person singular (ends in "s")
+                    if(subs == "have" or subs=="had"):
+                        new_subs = "has"
+                    elif(subs[-1:]!="s" and subs[-2:]!="ed"):
+                        new_subs = lemmatizer.lemmatize(subs)  + "s"
+                    elif(subs[-1:]!="s" and subs[-2:]=="ed"):
+                        new_subs = stemmer.stem(subs)  + "s"
+                elif(word_tag == "VBD" and word_tag != subs_tag): # past tense
+                    if(regular_verb and subs[-2:]!="ed" and subs[-1:]!="e"):
+                        new_subs = lemmatizer.lemmatize(subs)  + "ed"
+                    elif(regular_verb and subs[-1:]=="e"):
+                        new_subs = lemmatizer.lemmatize(subs)  + "d"
+                    else:
+                        if(subs in base_form_dict):
+                            tenses_list = base_form_dict[subs]
+                            past_tense = tenses_list[1]
+                            if(len(past_tense.split("/"))>1): 
+                                new_subs = past_tense.split("/")[0]
+                            else:
+                                new_subs = past_tense
+                        elif(subs in past_participle_dict):
+                            tenses_list = past_participle_dict[subs]
+                            past_tense = tenses_list[1]
+                            if(len(past_tense.split("/"))>1): # have/has
+                                new_subs = past_tense.split("/")[0]
+                            else:
+                                new_subs = past_tense
+                elif(word_tag == "VBN" and word_tag != subs_tag): # past participle
+                    if(regular_verb and subs[-2:]!="ed" and subs[-1:]!="e"):
+                        new_subs = lemmatizer.lemmatize(subs)  + "ed"
+                    elif(regular_verb and subs[-1:]=="e"):
+                        new_subs = lemmatizer.lemmatize(subs)  + "d"
+                    else:
+                        if(subs in base_form_dict):
+                            tenses_list = base_form_dict[subs]
+                            past_participle = tenses_list[2]
+                            if(len(past_participle.split("/"))>1): 
+                                new_subs = past_participle.split("/")[0]
+                            else:
+                                new_subs = past_participle
+                        elif(subs in past_tense_dict):
+                            tenses_list = past_tense_dict[subs]
+                            past_participle = tenses_list[2]
+                            if(len(past_participle.split("/"))>1):
+                                new_subs = past_participle.split("/")[1]
+                            else:
+                                new_subs = past_participle
+                elif(word_tag == "VBG" and word_tag != subs_tag): # present participle or gerund
+                    if(subs[-3:]!="ing"):
+                        new_subs = lemmatizer.lemmatize(subs)  + "ing"
+
+                if(new_subs):
+                    modified_subs.append(new_subs)
+                
+            modified_word_subs_dict[word] = modified_subs
+
     return modified_word_subs_dict
 
 # LS Step3: Substitution Ranking
-
 def generate3GramDict(filepath):
     three_gram_dict = {}
     max_val = 0
@@ -670,6 +786,8 @@ def getDefinitions(word_cand_list,word_sentence_dict):
     for pair in word_cand_list:
         text = ''
         definition = ''
+        word_definitions_accurate = []
+        word_definitions = []
         optional_def = ''
         target_word = pair[0]
         word_sentence = word_sentence_dict[target_word]
@@ -682,19 +800,40 @@ def getDefinitions(word_cand_list,word_sentence_dict):
         if response.status_code == 200:
             data = response.json()
             if(data and 'defs' in data[0]):
-                for definition in data[0]['defs']:
-                    tag_def_list = definition.split('\t')
+                for defin in data[0]['defs']:
+                    tag_def_list = defin.split('\t')
                     if(tag_def_list[0] == check_tag):
-                        definition = tag_def_list[1]
-                        break
-                if(len(data[0]['defs'])>0 and definition==''): # If we had definitions but no one was chosen (select the first one)
-                    definition = data[0]['defs'][0].split('\t')[1]
-        if(len(definition.split('\t'))>1):
-            definition = definition.split('\t')[1]
+                        word_definitions_accurate.append(tag_def_list[1])
+                    else: # If we had definitions but no one was chosen (select the first one)
+                        defin = data[0]['defs'][0].split('\t')[1]
+                        if(len(defin.split('\t'))>1):
+                            defin = defin.split('\t')[1]
+
+                        if(defin and defin[0]=='('):
+                            defin = re.sub(r'\([^)]*\)', '', defin, 1)
+                        word_definitions.append(defin)
+                        
+        for i in range(len(word_definitions_accurate)):
+            if(len(word_definitions_accurate[i].split('\t'))>1):
+                word_definitions_accurate[i] = word_definitions_accurate[i].split('\t')[1]
             
-        if(definition and definition[0]=='('):
-            definition = re.sub(r'\([^)]*\)', '', definition, 1)
+            if(word_definitions_accurate[i] and word_definitions_accurate[i][0]=='('):
+                word_definitions_accurate[i] = re.sub(r'\([^)]*\)', '', word_definitions_accurate[i], 1)
+                    
+        if(len(word_definitions_accurate)>0):
+            vectorizer = TfidfVectorizer()
+            vectors = vectorizer.fit_transform([word_sentence] + word_definitions_accurate)
+            similarity_scores = cosine_similarity(vectors)[0][1:]
+            best_definition_index = similarity_scores.argmax()
+            definition = word_definitions_accurate[best_definition_index]
+        elif(len(word_definitions)>0):
+            vectorizer = TfidfVectorizer()
+            vectors = vectorizer.fit_transform([word_sentence] + word_definitions)
+            similarity_scores = cosine_similarity(vectors)[0][1:]
+            best_definition_index = similarity_scores.argmax()
+            definition = word_definitions[best_definition_index]
                 
+        
         if(target_word and candidate and definition):
             text = target_word + " (replaced with " + candidate + ") is: " + definition.lower()
         elif(target_word and definition):
@@ -736,7 +875,7 @@ def simplify(text, printText=False):
     color_green = "\033[32m"
     color_reset = "\033[0m"
     
-    num_features = 6
+    num_features = 7
     num_single_features = 5
     vowels = "aeiouAEIOU"
     prediction = []
@@ -748,6 +887,8 @@ def simplify(text, printText=False):
 #     print(word_sentence_dict)
     word_subst_dict = {}
     new_text = text # initialize the new string with the original one
+    newtext_list = word_tokenize(new_text)
+    text_list = word_tokenize(text)
     for word in word_sentence_dict:
         word_subst_dict[word] = set()
         sentence = word_sentence_dict[word]
@@ -761,6 +902,7 @@ def simplify(text, printText=False):
         if(ppdb_candidates):
             word_subst_dict[word].update(ppdb_candidates)
     filtered_subs_dict = filterSubstitutions(word_subst_dict)
+#     print(filtered_subs_dict["endorsement"])
 #     print(word_subst_dict)
 #     print(filtered_subs_dict)
     modified_word_subs_dict = convertGrammStructure(filtered_subs_dict, word_sentence_dict) 
@@ -775,6 +917,13 @@ def simplify(text, printText=False):
         sem_similarity_ratios = []
         candidates = []
         sentence = word_sentence_dict[target_word]
+        target_word_indices = []
+        if(sentence.count(target_word)>1):
+            words = sentence.split()
+            for pos in range(len(words)):
+                if target_word == words[pos]: 
+                    target_word_indices.append(pos)
+        word_indx = text_list.index(target_word)
         candidates = modified_word_subs_dict[target_word]
 #         print(candidates)
 #         candidates = [target_word] + modified_word_subs_dict[target_word]
@@ -794,13 +943,13 @@ def simplify(text, printText=False):
                 else:
                     cos_similarity = 0
                 similarity_ratios.append(similarityRatio(target_word.lower(), candidate.lower()))
-                # sem_similarity_ratios.append(semanticSimilarityRatio(target_word.lower(), candidate.lower()))
+                sem_similarity_ratios.append(getPathSimilarity(target_word.lower(), candidate.lower()))
                 cosine_similarities.append(cos_similarity)
                 feature_matrix.append(features_list)
             cosine_similarities = np.array(cosine_similarities).reshape(len(feature_matrix),1)
             similarity_ratios = np.array(similarity_ratios).reshape(len(feature_matrix),1)
-            # sem_similarity_ratios = np.array(sem_similarity_ratios).reshape(len(feature_matrix),1)
-            X = np.hstack((feature_matrix,cosine_similarities))
+            sem_similarity_ratios = np.array(sem_similarity_ratios).reshape(len(feature_matrix),1)
+            X = np.hstack((feature_matrix,cosine_similarities,similarity_ratios))
             max_in_column = np.max(X,axis=0)
             for i in range(num_features):
                 if(max_in_column[i] != 0):
@@ -820,22 +969,44 @@ def simplify(text, printText=False):
                 chosen_candidate = chosen_candidate[0].upper() + chosen_candidate[1:]
             if(target_word.isupper()):
                 chosen_candidate = chosen_candidate.upper()
-            if(prev_word == 'a' and chosen_candidate[0] in vowels):
-                new_text = new_text.replace('a '+ target_word, 'an ' + chosen_candidate)
-            elif(prev_word == 'an' and chosen_candidate[0] not in vowels):
-                new_text = new_text.replace('an '+ target_word, 'a ' + chosen_candidate)
+                
+                
+            if(len(target_word_indices)==0):
+                if(prev_word == 'a' and chosen_candidate[0] in vowels):
+                    newtext_list[word_indx-1] = 'an'
+                    newtext_list[word_indx] = chosen_candidate
+                    new_text = new_text.replace('a '+ target_word, 'an ' + chosen_candidate)
+                elif(prev_word == 'an' and chosen_candidate[0] not in vowels):
+                    new_text = new_text.replace('an '+ target_word, 'a ' + chosen_candidate)
+                    newtext_list[word_indx-1] = 'a'
+                    newtext_list[word_indx] = chosen_candidate
+                else:
+                    newtext_list[word_indx] = chosen_candidate
+    #                 new_text = new_text.replace(target_word, chosen_candidate)
+                word_replace_dict[target_word] = chosen_candidate
             else:
-                new_text = new_text.replace(target_word, chosen_candidate)
-            word_replace_dict[target_word] = chosen_candidate
-#             print(len(text), len(new_text))
+                for indx in target_word_indices:
+                    prev_word = text_list[indx-1]
+                    if(prev_word == 'a' and chosen_candidate[0] in vowels):
+                        newtext_list[indx-1] = 'an'
+                        newtext_list[indx] = chosen_candidate
+                        new_text = new_text.replace('a '+ target_word, 'an ' + chosen_candidate)
+                    elif(prev_word == 'an' and chosen_candidate[0] not in vowels):
+                        new_text = new_text.replace('an '+ target_word, 'a ' + chosen_candidate)
+                        newtext_list[indx-1] = 'a'
+                        newtext_list[indx] = chosen_candidate
+                    else:
+                        newtext_list[indx] = chosen_candidate
+        #                 new_text = new_text.replace(target_word, chosen_candidate)
+                    word_replace_dict[target_word] = chosen_candidate
+    
+    
         else:
             word_cand_list.append((target_word, ''))
 
     definitions = getDefinitions(word_cand_list,word_sentence_dict)
 
     if(printText):
-        text_list = word_tokenize(text)
-        newtext_list = word_tokenize(new_text)
         for word in text_list:
             if(word in word_sentence_dict):
                 print(f"{color_red}{word}{color_reset}",end=" ")
@@ -848,6 +1019,8 @@ def simplify(text, printText=False):
             else:
                 print(f"{newtext_list[i]}",end=" ")
         print("\n")
+        
+    new_text = " ".join(newtext_list)
             
     return new_text,definitions
 
