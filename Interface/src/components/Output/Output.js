@@ -42,6 +42,7 @@ function Output() {
 
     let textAndDetails = [];
     let simplifierText = ''
+    let summarizedText = ''
     let simplifierDefinitions = []
     if (Array.isArray(received_data)) {
       isSimplifier = true;
@@ -50,14 +51,19 @@ function Output() {
       simplifierDefinitions = received_data.slice(1)
     } else {
       isSummarizer = true;
-      textAndDetails = [received_data];
+      // textAndDetails = [received_data];
+      summarizedText = received_data
     }
 
-    const firstSpaceIndex = simplifierDefinitions[0].indexOf(" ");
-    const secondSpaceIndex = simplifierDefinitions[0].indexOf(" ", firstSpaceIndex + 1);
-    const thirdSpaceIndex = simplifierDefinitions[0].indexOf(" ", secondSpaceIndex + 1);
-    const firstClosingBrackIndex = simplifierDefinitions[0].indexOf(")");
-    console.log(firstSpaceIndex)
+    if (isSimplifier)
+    {
+      const firstSpaceIndex = simplifierDefinitions[0].indexOf(" ");
+      const secondSpaceIndex = simplifierDefinitions[0].indexOf(" ", firstSpaceIndex + 1);
+      const thirdSpaceIndex = simplifierDefinitions[0].indexOf(" ", secondSpaceIndex + 1);
+      const firstClosingBrackIndex = simplifierDefinitions[0].indexOf(")");
+      console.log(firstSpaceIndex)
+    }
+    
     const handleDeleteIconClick = () => {
         setFileName('');
         setFileUpload(false);
@@ -87,11 +93,7 @@ function Output() {
     : (<div></div>)}
 
     {isSummarizer ? (<div>
-      {
-      simplifierDefinitions.map((item, index) => (
-        <p  key={index}>{item}</p>
-      ))
-    }
+    <p className="p_output_summarizer">{summarizedText}</p>
     </div>) 
     : (<div></div>) }
     </div>
