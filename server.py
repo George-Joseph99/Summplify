@@ -1,10 +1,9 @@
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+from flask import Flask, jsonify, request, make_response
+from flask_cors import CORS, cross_origin
 from Models import *
 
 app = Flask(__name__)
 CORS(app)
-
 
 @app.route('/main', methods=['POST'])
 def receive_text():
@@ -33,4 +32,4 @@ def receive_text():
     return output_text
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(port=8000, debug=True)

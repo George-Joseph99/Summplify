@@ -32,9 +32,9 @@ function Main() {
                 "text": text,
                 "summarizeOrSimplify": 0   // 1 for summary, 0 for simplify
             }
-            axios.post('http://localhost:5000/main',  dataToSimplify)
+            axios.post('http://localhost:8000/main',  dataToSimplify)
             .then(response => {
-            console.log(response.data);
+            console.log("rr", response.data);
 
             const simplified_data = response.data
             navigate('/output', 
@@ -53,7 +53,7 @@ function Main() {
                 "extractiveOrAbstractive":extractiveOrAbstractive,
                 "compressedLength":sliderValue / 10
             }
-            axios.post('http://localhost:5000/main',  dataToSummarize)
+            axios.post('http://localhost:8000/main',  dataToSummarize)
             .then(response => {
             console.log(response.data);
             navigate('/output', 

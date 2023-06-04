@@ -116,7 +116,7 @@ def generateIrregularVerbsDict(text_file):
                 past_participle_dict[past_participle] = [base,past,past_participle]
     return base_form_dict,past_tense_dict,past_participle_dict
 
-base_form_dict,past_tense_dict,past_participle_dict = generateIrregularVerbsDict("irregular_verbs.txt")
+base_form_dict,past_tense_dict,past_participle_dict = generateIrregularVerbsDict("Simplifier/irregular_verbs.txt")
 
 def has_special_characters(string):
     pattern = r'[^\w\s]'
@@ -474,10 +474,12 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                 subs_tag = getPosTag(subs)
                 subs_type = getTypeFromTag(subs_tag)
                 if(word_tag=="NN" and subs_tag=="NNS"):
-                    new_subs = singularize(subs)
+                    # new_subs = singularize(subs)
+                    new_subs = subs
                     modified_subs.append(new_subs)
                 elif(word_tag=="NNS" and subs_tag=="NN"):
-                    new_subs = pluralize(subs)
+                    new_subs = subs
+                    # new_subs = pluralize(subs)
                     modified_subs.append(new_subs)
                 elif((word_tag=="NNS" and subs_tag=="NNS") or (word_tag=="NN" and subs_tag=="NN")):
                     modified_subs.append(subs)
@@ -488,10 +490,12 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                 subs_tag = getPosTag(subs)
                 subs_type = getTypeFromTag(subs_tag)
                 if(word_tag=="JJR" and (subs_tag=="JJS" or subs_tag=="JJ")):
-                    new_subs = comparative(subs)
+                    new_subs = subs
+                    # new_subs = comparative(subs)
                     modified_subs.append(new_subs)
                 elif(word_tag=="JJS" and (subs_tag=="JJR" or subs_tag=="JJ")):
-                    new_subs = superlative(subs)
+                    new_subs = subs
+                    # new_subs = superlative(subs)
                     modified_subs.append(new_subs)
                 elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
                     modified_subs.append(subs)
@@ -836,8 +840,8 @@ def getDefinitions(word_cand_list,word_sentence_dict):
         
         if(target_word and candidate and definition):
             text = target_word + " (replaced with " + candidate + ") is: " + definition.lower()
-        elif(target_word and definition):
-            text = target_word + " is: " + definition.lower()
+        # elif(target_word and definition):
+        #     text = target_word + " is: " + definition.lower()
             
         if(text):
             definitions.append(text)
@@ -875,7 +879,7 @@ def simplify(text, printText=False):
     color_green = "\033[32m"
     color_reset = "\033[0m"
     
-    num_features = 7
+    num_features = 6
     num_single_features = 5
     vowels = "aeiouAEIOU"
     prediction = []
@@ -902,11 +906,7 @@ def simplify(text, printText=False):
         if(ppdb_candidates):
             word_subst_dict[word].update(ppdb_candidates)
     filtered_subs_dict = filterSubstitutions(word_subst_dict)
-#     print(filtered_subs_dict["endorsement"])
-#     print(word_subst_dict)
-#     print(filtered_subs_dict)
     modified_word_subs_dict = convertGrammStructure(filtered_subs_dict, word_sentence_dict) 
-#     print(modified_word_subs_dict)
     
     # EXTRACT FEATURES
     for target_word in modified_word_subs_dict:
@@ -925,7 +925,6 @@ def simplify(text, printText=False):
                     target_word_indices.append(pos)
         word_indx = text_list.index(target_word)
         candidates = modified_word_subs_dict[target_word]
-#         print(candidates)
 #         candidates = [target_word] + modified_word_subs_dict[target_word]
         if(len(candidates)>0):
             for candidate in candidates:
@@ -949,20 +948,15 @@ def simplify(text, printText=False):
             cosine_similarities = np.array(cosine_similarities).reshape(len(feature_matrix),1)
             similarity_ratios = np.array(similarity_ratios).reshape(len(feature_matrix),1)
             sem_similarity_ratios = np.array(sem_similarity_ratios).reshape(len(feature_matrix),1)
-            X = np.hstack((feature_matrix,cosine_similarities,similarity_ratios))
+            X = np.hstack((feature_matrix,cosine_similarities))
             max_in_column = np.max(X,axis=0)
             for i in range(num_features):
                 if(max_in_column[i] != 0):
                     X[:, i] = X[:, i]/max_in_column[i]
-#             print(candidates)
-#             print(X)
             prediction = predict(model, X)
-#             print(candidates)
-#             print(prediction)
             min_value = min(prediction)
             prediction_list = prediction.tolist()
             min_index=prediction_list.index(min_value)
-#             print(prediction_list,"\n",candidates)
             chosen_candidate = candidates[min_index]
             word_cand_list.append((target_word, chosen_candidate))
             if(target_word[0].isupper()):
