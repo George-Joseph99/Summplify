@@ -723,9 +723,32 @@ def greedy_decode(input_sentence, model):
     
     return detokenize(generated_output[:-1])
 
-
-
-def abstrctive_summary(article):
+def abstractive_summary(article):
     model = TransformerLM(mode='eval')
-    model.init_from_file('Summarizer/model/model.pkl.gz', weights_only=True)
-    return(greedy_decode(article, model))
+    model.init_from_file('Summarizer/abstractive_summary_data/fine_tuning_weights/model.pkl.gz', weights_only=True)
+    article_summary = tokenize(article)
+    article_summary.append(0)
+    summary = []
+    generated_word = 0
+    start_summary = len(article_summary) 
+    while generated_word != 1:
+        length_padding = np.power(2, int(np.ceil(np.log2(len(article_summary) + 1)))) - len(article_summary)
+        article_summary_padded = article_summary.copy()
+        for _ in range(length_padding):
+            article_summary_padded.append(0)
+        article_summary_padded = np.array(article_summary_padded)[None, :]
+        output, _ = model((article_summary_padded, article_summary_padded))  
+        log_probs = output[0, len(article_summary), :]
+        generated_word = int(np.argmax(log_probs))
+        article_summary.append(generated_word)
+        
+    for i in range(start_summary, len(article_summary)):
+        summary.append(article_summary[i])
+        
+    summary = detokenize(summary[: -1])
+    return summary
+
+# def abstrctive_summary(article):
+#     model = TransformerLM(mode='eval')
+#     model.init_from_file('Summarizer/abstractive_summary_data/fine_tuning_weights/model.pkl.gz', weights_only=True)
+#     return(greedy_decode(article, model))

@@ -18,7 +18,7 @@ def receive_text():
             output_text = Summarizer.extractive_summary(text, compressed_length)
             print(output_text)
         elif extractive_or_abstractive == '0':
-            output_text = Summarizer.abstrctive_summary(text)
+            output_text = Summarizer.abstractive_summary(text)
             print(output_text)
     elif summary_or_simplify == 0:
         output_text, details = Simplifier.simplify(text)
