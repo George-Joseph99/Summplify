@@ -9,9 +9,9 @@ godzilla.txt
 articles
 abstractive_summary_data
 lexicon.tsv
-ppd-2.0-m-lexical
+ppdb-2.0-m-lexical
 th_en_US_new.dat
 model
 temp_model
-ngram_freq
+ngram_freq.csv
 Translator/translator_model/

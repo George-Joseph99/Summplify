@@ -10,8 +10,9 @@
     padding: 0 30px;
     background-image: url('bg12.jpeg');
     /* background: linear-gradient(70deg, rgba(189, 53, 230, 0.913) 50%, rgb(0, 0, 0) 100%); */
-    background-size: cover;
+    background-size:cover;
     height: 100vh;
+    overflow: auto;
     }
 
 .img_Home{

@@ -2,9 +2,11 @@
 
 
 .p_output{
-    position: absolute;
-    height: 540px;
+    position: relative;
+    height: 500px;
     width: 1100px;
+    margin-top: 220px;
+    margin-left: -15px;
     padding-top: 20px;
     padding-bottom: 20px;
     padding-left: 20px;
@@ -16,4 +18,69 @@
     background-color: rgba(255, 192, 203, 0.244); 
     overflow: auto;
 }
+
+.p_output_summarizer{
+    position: relative;
+    height: 500px;
+    width: 1100px;
+    margin-top: 20px;
+    margin-left: -15px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    border: none;
+    text-align: left;
+    color: white;
+    font-size: 25px;
+    background-color: rgba(255, 192, 203, 0.244); 
+    overflow: auto;
+}
+
+
+.p_definition{
+    font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif;
+    font-weight: 550;
+    color: rgb(72, 72, 72);
+}
+
+.div_definitions{
+    font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif;
+    position: relative;
+    /* margin-top: 600px; */
+    margin-left: -15px;
+    width: 1050px;
+    height: 200px;
+    overflow: auto;   
+    text-align: left;
+    border: solid white;
+    padding-right: 65px;
+    padding-left: 20px;
+    /* background-color: rgb(248, 248, 248); */
+    background: linear-gradient(to bottom left, #f6e6ffe2, #d5d5d5e1, rgba(255, 255, 255, 0.904));
+    margin-bottom: 50px;
+}
+
+.img_Output{
+    -webkit-animation: mover 1s infinite  alternate;
+    animation: mover 1.5s infinite  alternate;
+    margin-top: 130px;
+    margin-left: 490px;
+    height: 100px;
+    width: 100px;
+    position:absolute;
+    z-index: 3;
+}
+
+.img6_Output{
+    position:absolute;
+    z-index: 3;
+    width: 1100px;
+    height: 50px;
+    margin-left: -550px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: whitesmoke;
+  }
 
