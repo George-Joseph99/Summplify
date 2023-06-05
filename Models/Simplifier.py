@@ -23,8 +23,8 @@ from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize, word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
-# from pattern.text.en import pluralize, singularize, comparative, superlative, conjugate
-# from pattern.text.en import tenses, INFINITIVE, PRESENT, PAST, FUTURE
+from pattern.text.en import pluralize, singularize, comparative, superlative, conjugate
+from pattern.text.en import tenses, INFINITIVE, PRESENT, PAST, FUTURE
 
 wiki_freq_dict = {}
 lexicon_dict = {}
@@ -474,12 +474,10 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                 subs_tag = getPosTag(subs)
                 subs_type = getTypeFromTag(subs_tag)
                 if(word_tag=="NN" and subs_tag=="NNS"):
-                    # new_subs = singularize(subs)
-                    new_subs = subs
+                    new_subs = singularize(subs)
                     modified_subs.append(new_subs)
                 elif(word_tag=="NNS" and subs_tag=="NN"):
-                    new_subs = subs
-                    # new_subs = pluralize(subs)
+                    new_subs = pluralize(subs)
                     modified_subs.append(new_subs)
                 elif((word_tag=="NNS" and subs_tag=="NNS") or (word_tag=="NN" and subs_tag=="NN")):
                     modified_subs.append(subs)
@@ -490,12 +488,10 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                 subs_tag = getPosTag(subs)
                 subs_type = getTypeFromTag(subs_tag)
                 if(word_tag=="JJR" and (subs_tag=="JJS" or subs_tag=="JJ")):
-                    new_subs = subs
-                    # new_subs = comparative(subs)
+                    new_subs = comparative(subs)
                     modified_subs.append(new_subs)
                 elif(word_tag=="JJS" and (subs_tag=="JJR" or subs_tag=="JJ")):
-                    new_subs = subs
-                    # new_subs = superlative(subs)
+                    new_subs = superlative(subs)
                     modified_subs.append(new_subs)
                 elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
                     modified_subs.append(subs)
@@ -514,6 +510,8 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                     regular_verb = False
                 else:
                     regular_verb = True
+                if(word_tag == subs_tag):
+                    modified_subs.append(subs)
                 if(word_tag == "VB" and word_tag != subs_tag): # base form or simple present tense
                     if(regular_verb and subs[-2:]!="ed"):
                         new_subs = lemmatizer.lemmatize(subs) 
