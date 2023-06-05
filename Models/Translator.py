@@ -102,10 +102,10 @@ class Transformer(nn.Module):
         out = self.transformer(embed_src,embed_trg, src_key_padding_mask=src_padding_mask,tgt_mask=trg_mask )
         out= self.fc_out(out)
         return out
+BATCH_SIZE = 16 
 train_iter, valid_iter = data.BucketIterator.splits((train_data,valid_data), batch_size = BATCH_SIZE,sort=None,sort_within_batch=False,sort_key=lambda x: len(x.eng),device=device,shuffle=True)
 load_model = False
 save_model = True
-BATCH_SIZE = 16 
 learning_rate = 0.0001
 num_epochs = 30
 # Model
