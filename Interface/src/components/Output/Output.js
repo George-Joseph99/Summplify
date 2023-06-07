@@ -33,6 +33,7 @@ function Output() {
     let simplifierText = ''
     let summarizedText = ''
     let translatedText = ''
+    let originalText = ''
     let simplifierDefinitions = []
     let showDefinitions = 0
     if (isSimplifier) {
@@ -46,6 +47,7 @@ function Output() {
     }
     else if(isTranslator){
       translatedText = received_data
+      originalText = params[2]
     }
 
     if (isSimplifier && showDefinitions=='1' && simplifierDefinitions.length>0)
@@ -90,8 +92,9 @@ function Output() {
     </div>) 
     : (<div></div>) }
 
-    {isTranslator ? (<div> 
-      <p className="p_output_summarizer">{translatedText}</p>
+    {isTranslator ? (<div className="div_main_translator"> 
+      <div className="div1_output_translator">{originalText}</div>
+      <div className="div2_output_translator">{translatedText}</div>
       </div>) 
       : (<div></div>)}
     </div>

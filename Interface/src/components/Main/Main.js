@@ -77,7 +77,7 @@ function Main() {
             
             axios.post('http://localhost:8000/main',  dataToTranslate)
             .then(response => {
-            const params = [ 2, response.data]
+            const params = [ 2, response.data, text]
             navigate('/output', 
                 {state: params}
             )
