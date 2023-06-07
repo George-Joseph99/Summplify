@@ -15,6 +15,7 @@ function Output() {
     const location = useLocation();
     const params = location.state;
     const received_data = params[1]
+    console.log(received_data)
     const method = params[0]
     let isSimplifier = false;
     let isSummarizer = false;
@@ -33,9 +34,12 @@ function Output() {
     let summarizedText = ''
     let translatedText = ''
     let simplifierDefinitions = []
+    let showDefinitions = 0
     if (isSimplifier) {
-      console.log(received_data)
+      showDefinitions = params[2]
       simplifierText = received_data[0]
+      console.log(showDefinitions)
+      console.log(simplifierText)
       simplifierDefinitions = received_data.slice(1)
     } else if(isSummarizer){
       summarizedText = received_data
@@ -44,7 +48,7 @@ function Output() {
       translatedText = received_data
     }
 
-    if (isSimplifier)
+    if (isSimplifier && showDefinitions=='1')
     {
       const firstSpaceIndex = simplifierDefinitions[0].indexOf(" ");
       const secondSpaceIndex = simplifierDefinitions[0].indexOf(" ", firstSpaceIndex + 1);
@@ -54,7 +58,7 @@ function Output() {
 
   return (
     <div className="div_container">
-    {isSimplifier ? (<div>
+    {showDefinitions==1 && isSimplifier ? (<div>
       <p className="p_output">{simplifierText}</p>
       <img src={pic5} className="img_Output"></img>
       <div className="div_definitions">
@@ -72,6 +76,10 @@ function Output() {
     </div>
     </div>) 
     : (<div></div>)}
+
+    {showDefinitions==0 && isSimplifier ? (<div>
+      <p className="p_output_summarizer">{simplifierText}</p>
+    </div>) : (<div></div>)}
 
     {isSummarizer ? (<div>
     <p className="p_output_summarizer">{summarizedText}</p>

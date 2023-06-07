@@ -850,7 +850,7 @@ def getDefinitions(word_cand_list,word_sentence_dict):
         
     return definitions
 
-def simplify(text, printText=False):
+def simplify(text, showDefinitions, printText=False):
     
     model = {'W1': [[ 0.59379275,  0.10573328,  0.3333015 ,  0.92123417,  0.67295641,
         -0.35045897],
@@ -1000,7 +1000,10 @@ def simplify(text, printText=False):
         else:
             word_cand_list.append((target_word, ''))
 
-    definitions = getDefinitions(word_cand_list,word_sentence_dict)
+    if(showDefinitions=='1'):
+        definitions = getDefinitions(word_cand_list,word_sentence_dict)
+    else:
+        definitions = []
 
     if(printText):
         for word in text_list:

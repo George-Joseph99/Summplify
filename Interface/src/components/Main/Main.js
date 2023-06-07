@@ -17,11 +17,13 @@ function Main() {
     const [file, setFile] = useState('');
     const [text, setText] = useState('');
     const [isHovering, setIsHovering] = useState(false);
+    const [isHoveringSimp, setIsHoveringSimp] = useState(false);
     const [summIsClicked, setSummIsClicked] = useState(false);
     const [simIsClicked, setSimIsClicked] = useState(false);
     const [tranIsClicked, setTranIsClicked] = useState(false);
     const [isHoveringAgain, setIsHoveringAgain] = useState(false);
     const [extractiveOrAbstractive, setExtractiveOrAbstractive] = useState('1');
+    const [showDefinitions, setShowDefinitions] = useState('0');
     const [sliderValue, setSliderValue] = useState(3);
     var files = [];
     const navigate = useNavigate();
@@ -31,13 +33,14 @@ function Main() {
         if(simIsClicked){
             const dataToSimplify = {
                 "text": text,
-                "summarizeOrSimplify": 0   // 2 for translate, 1 for summary, 0 for simplify
+                "summarizeOrSimplify": 0,   // 2 for translate, 1 for summary, 0 for simplify
+                "showDefinitions": showDefinitions
             }
             axios.post('http://localhost:8000/main',  dataToSimplify)
             .then(response => {
             console.log("rr", response.data);
             const simplified_data = response.data
-            const params = [ 0, response.data]
+            const params = [ 0, response.data, showDefinitions]
             navigate('/output', 
                 {state: params}
             )
@@ -129,17 +132,29 @@ function Main() {
         setExtractiveOrAbstractive(e.target.value);
     };
 
+    const changeShowDefinitions = (e) => {
+        setShowDefinitions(e.target.value);
+    }
+
     const getSliderBackgroundSize = () => {
         return { backgroundSize: `${(sliderValue * 100)/10}% 100%`};
+    };
+
+    const handleMouseOverSimp = () => {
+        setIsHoveringSimp(true);
     };
 
     const handleMouseOver = () => {
         setIsHovering(true);
     };
     
-      const handleMouseOut = () => {
+    const handleMouseOut = () => {
         setIsHovering(false);   
     };
+
+    const handleMouseOutSimp = () => {
+        setIsHoveringSimp(false); 
+    }
 
     useEffect(() => {
         if(file){
@@ -173,16 +188,30 @@ function Main() {
         }
         <div className="div_buttons">
         <button className={tranIsClicked ? "button_translate_colored" : "button_translate"} onClick={handleTranButtonClick}>
-                Translate
-            </button>
-            <button className={simIsClicked ? "button_simplify_colored" : "button_simplify"} onClick={handleSimButtonClick}>
-                Simplify
-            </button>
+                    Translate
+                </button>
+            <button className={simIsClicked ? "button_simplify_colored" : "button_simplify"} onClick={handleSimButtonClick} onMouseOver={handleMouseOverSimp}
+            onMouseOut={handleMouseOutSimp}>
+                    Simplify
+                </button>
+            
             <button className={summIsClicked ? "button_summarize_colored" : "button_summarize"} onClick={handleSummButtonClick} onMouseOver={handleMouseOver}
           onMouseOut={handleMouseOut}>
                 Summarize
             </button>
         </div>
+
+        {(isHoveringSimp || simIsClicked) && (
+        <div className="div_methods_simp">
+            <label><input className="input_button1" type="radio" value='1' checked={showDefinitions == 1} onChange={changeShowDefinitions}/>
+                    Show definitions
+            </label>
+            <br />
+            <label>
+            <input type="radio" className="input_button2" value='0' checked={showDefinitions == 0} onChange={changeShowDefinitions}/>
+                    Do not show definitions
+            </label>
+        </div>)}
 
         {(isHovering || summIsClicked)&& (
                 <div className="div_methods">

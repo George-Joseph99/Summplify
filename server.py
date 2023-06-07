@@ -21,9 +21,9 @@ def receive_text():
             output_text = Summarizer.abstractive_summary(text)
             print(output_text)
     elif summary_or_simplify == 0:
-        output_text, details = Simplifier.simplify(text)
-        print(output_text)
-        print(details)
+        show_definitions = data['showDefinitions']
+        print(show_definitions)
+        output_text, details = Simplifier.simplify(text,show_definitions)
         simplified_data = []
         simplified_data.append(output_text)
         for detail in details:
