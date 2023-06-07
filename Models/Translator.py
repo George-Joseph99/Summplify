@@ -309,7 +309,7 @@ ar_Tokenizer = Tokenizer(arab.vocab)
 # english_file = "data/english_test.txt"
 # arabic_file = "data/arabic_output.txt"
 # #use GPU if available
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # # Set up the model and tokenizer
 # model_name = "translator_model"
 # tokenizer = MarianTokenizer.from_pretrained(model_name)
@@ -413,19 +413,20 @@ ar_Tokenizer = Tokenizer(arab.vocab)
 # accuracy = num_correct / total
 # print("Accuracy: {:.2%}".format(accuracy))
 
-# def translate(input_sentence):
-#     # Tokenize the input sentence
-#     model = MarianMTModel.from_pretrained("translator_model").to(device)
-#     tokenizer = MarianTokenizer.from_pretrained("translator_model")
-#     input_ids = tokenizer.encode(input_sentence, padding=True, truncation=True, max_length=512, return_tensors="pt")
-#     input_ids = input_ids.to(device)
-
-#     # Generate the translation using the model
-#     translation = model.generate(input_ids)
-
-#     # Decode the generated translation
-#     translated_sentence = tokenizer.decode(translation[0], skip_special_tokens=True)
-#     return translated_sentence
-
 def translate(input_sentence):
-    return "translation link working"
+    # Tokenize the input sentence
+    input_sentence = input_sentence.lower()
+    model = MarianMTModel.from_pretrained("translator_model").to(device)
+    tokenizer = MarianTokenizer.from_pretrained("translator_model")
+    input_ids = tokenizer.encode(input_sentence, padding=True, truncation=True, max_length=512, return_tensors="pt")
+    input_ids = input_ids.to(device)
+
+    # Generate the translation using the model
+    translation = model.generate(input_ids)
+
+    # Decode the generated translation
+    translated_sentence = tokenizer.decode(translation[0], skip_special_tokens=True)
+    return translated_sentence
+
+# def translate(input_sentence):
+#     return "translation link working"
