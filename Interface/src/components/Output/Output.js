@@ -48,7 +48,7 @@ function Output() {
       translatedText = received_data
     }
 
-    if (isSimplifier && showDefinitions=='1')
+    if (isSimplifier && showDefinitions=='1' && simplifierDefinitions.length>0)
     {
       const firstSpaceIndex = simplifierDefinitions[0].indexOf(" ");
       const secondSpaceIndex = simplifierDefinitions[0].indexOf(" ", firstSpaceIndex + 1);
@@ -58,7 +58,7 @@ function Output() {
 
   return (
     <div className="div_container">
-    {showDefinitions==1 && isSimplifier ? (<div>
+    {showDefinitions==1 && simplifierDefinitions.length>0 && isSimplifier ? (<div>
       <p className="p_output">{simplifierText}</p>
       <img src={pic5} className="img_Output"></img>
       <div className="div_definitions">
@@ -78,6 +78,10 @@ function Output() {
     : (<div></div>)}
 
     {showDefinitions==0 && isSimplifier ? (<div>
+      <p className="p_output_summarizer">{simplifierText}</p>
+    </div>) : (<div></div>)}
+
+    {showDefinitions==1 && simplifierDefinitions.length==0 && isSimplifier ? (<div>
       <p className="p_output_summarizer">{simplifierText}</p>
     </div>) : (<div></div>)}
 
