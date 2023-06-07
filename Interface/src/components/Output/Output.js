@@ -13,46 +13,35 @@ import pic5 from './pic5.png'
 function Output() {
     const [searchparams] = useSearchParams();
     const location = useLocation();
-    const received_data = location.state;
-    const method = location.method;
+    const params = location.state;
+    const received_data = params[1]
+    const method = params[0]
     let isSimplifier = false;
     let isSummarizer = false;
-    console.log(method);
+    let isTranslator = false;
 
-    const [fileUpload, setFileUpload] = useState(false);
-    const [fileName, setFileName] = useState('');
-    const [file, setFile] = useState('');
-    var files = [];
-
-    // useEffect(() => {
-    //     axios.get('http://localhost:3000/output') // 1 will be changed to id
-    //     .then((response) => {
-    //     const data = response.data;
-    //     setText(data['text']);
-
-    //     }).catch(() => {
-    //         alert('Error retrieving data');
-    //     })
-    //     }, []);
-
-    // const handleTextInput = (e) => {
-    //     console.log(e.target.value);
-    //     setText(e.target.value);
-    // }
-
-    let textAndDetails = [];
+    if(method == 0){
+      isSimplifier = true;
+    }
+    else if(method == 1){
+      isSummarizer = true;
+    }
+    else if(method == 2){
+      isTranslator = true;
+    }
     let simplifierText = ''
     let summarizedText = ''
+    let translatedText = ''
     let simplifierDefinitions = []
-    if (Array.isArray(received_data)) {
-      isSimplifier = true;
-      textAndDetails = received_data;
+    if (isSimplifier) {
+      console.log(received_data)
       simplifierText = received_data[0]
       simplifierDefinitions = received_data.slice(1)
-    } else {
-      isSummarizer = true;
-      // textAndDetails = [received_data];
+    } else if(isSummarizer){
       summarizedText = received_data
+    }
+    else if(isTranslator){
+      translatedText = received_data
     }
 
     if (isSimplifier)
@@ -61,15 +50,7 @@ function Output() {
       const secondSpaceIndex = simplifierDefinitions[0].indexOf(" ", firstSpaceIndex + 1);
       const thirdSpaceIndex = simplifierDefinitions[0].indexOf(" ", secondSpaceIndex + 1);
       const firstClosingBrackIndex = simplifierDefinitions[0].indexOf(")");
-      console.log(firstSpaceIndex)
     }
-    
-    const handleDeleteIconClick = () => {
-        setFileName('');
-        setFileUpload(false);
-        setFile('');
-    }
-
 
   return (
     <div className="div_container">
@@ -96,6 +77,11 @@ function Output() {
     <p className="p_output_summarizer">{summarizedText}</p>
     </div>) 
     : (<div></div>) }
+
+    {isTranslator ? (<div> 
+      <p className="p_output_summarizer">{translatedText}</p>
+      </div>) 
+      : (<div></div>)}
     </div>
   );
 }

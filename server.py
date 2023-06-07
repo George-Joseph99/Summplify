@@ -10,7 +10,7 @@ def receive_text():
     data = request.get_json()
     # print(data)
     text = data['text']
-    summary_or_simplify = data['summarizeOrSimplify']
+    summary_or_simplify = data['summarizeOrSimplify'] # 2 for translate, 1 for summary, 0 for simplify
     if summary_or_simplify == 1:
         extractive_or_abstractive = data['extractiveOrAbstractive']
         if extractive_or_abstractive == '1':
@@ -29,7 +29,8 @@ def receive_text():
         for detail in details:
             simplified_data.append(detail)
         return jsonify(simplified_data)
+    elif summary_or_simplify == 2:
+        output_text = Translator.translate(text)
     return output_text
-
 if __name__ == "__main__":
     app.run(port=8000, debug=True)

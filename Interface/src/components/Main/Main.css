@@ -79,14 +79,15 @@
 .div_buttons{
     position: absolute;
     margin-top: 640px;
-    margin-left: -30%;
+    margin-left: -17%;
     /* margin-left: 600px; */
 }
 
 .div_methods{
     position: absolute;
     margin-top: 640px;
-    margin-left: 38%;
+    /* margin-top: 770px; */
+    margin-left: 45%;
     background: #b56ae036;
     border: #a87cff5b solid;
     color: rgba(244, 243, 243, 0.777);
@@ -115,13 +116,16 @@
     color: rgba(244, 243, 243, 0.777);
     font-size: large;
     font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif;
-    margin-right: 100px;
+    margin-right: 900px;
+    margin-top: -650px;
+    margin-bottom: 20px;
+    /* margin-left: 950px; */
     transition: 0.3s;
 }
 
 .label_file:hover{
     font-weight: 600;
-    background: #633ab395;   
+    background: #8146c58d;   
 }
 
 .input_file{
@@ -141,7 +145,8 @@
     border: #d2d2d2 solid;
     font-size: large;
     color: whitesmoke;
-    margin-right: 3px;
+    margin-right: 30px;
+    margin-left: 160px;
     font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif; 
 }
 
@@ -160,7 +165,8 @@
     border: #d2d2d2 solid;
     font-size: large;
     color: black;
-    margin-right: 3px;
+    margin-right: 30px;
+    margin-left: 160px;
     font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif; 
 }
 
@@ -190,6 +196,39 @@
     height: 50px;
     background-color: #ca28a1;
     border: #ca28a1 solid;
+    border-radius: 10px;
+    font-size: large;
+    color: whitesmoke;
+    font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif; 
+}
+
+.button_translate{
+    position: absolute;
+    /* margin-left: 10px; */
+    margin-right: 300px;
+    width: 120px;
+    height: 50px;
+    background-color: transparent;
+    border: #1a7f10 solid;
+    border-radius: 10px;
+    font-size: large;
+    color: whitesmoke;
+    font-family: 'Poppins' , Verdana, Geneva, Tahoma, sans-serif; 
+}
+
+.button_translate:hover{
+    cursor: pointer;
+    background-color: #1a7f10;
+    transition: 0.6s;
+}
+
+.button_translate_colored{
+    position: absolute;
+    /* margin-left: 10px; */
+    width: 120px;
+    height: 50px;
+    background-color: #1a7f10;
+    border: #1a7f10 solid;
     border-radius: 10px;
     font-size: large;
     color: whitesmoke;
