@@ -11,3 +11,5 @@ wordfreq
 py_thesaurus
 pattern
 trax
+transformers
+torchtext
