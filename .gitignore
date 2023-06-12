@@ -14,4 +14,5 @@ th_en_US_new.dat
 model
 temp_model
 ngram_freq.csv
-Translator/translator_model/
+translator_model
+comparing
