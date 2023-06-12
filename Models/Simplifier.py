@@ -23,8 +23,8 @@ from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize, word_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
-# from pattern.text.en import pluralize, singularize, comparative, superlative, conjugate
-# from pattern.text.en import tenses, INFINITIVE, PRESENT, PAST, FUTURE
+from pattern.text.en import pluralize, singularize, comparative, superlative, conjugate
+from pattern.text.en import tenses, INFINITIVE, PRESENT, PAST, FUTURE
 
 wiki_freq_dict = {}
 lexicon_dict = {}
@@ -474,12 +474,10 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                 subs_tag = getPosTag(subs)
                 subs_type = getTypeFromTag(subs_tag)
                 if(word_tag=="NN" and subs_tag=="NNS"):
-                    # new_subs = singularize(subs)
-                    new_subs = subs
+                    new_subs = singularize(subs)
                     modified_subs.append(new_subs)
                 elif(word_tag=="NNS" and subs_tag=="NN"):
-                    # new_subs = pluralize(subs)
-                    new_subs = subs
+                    new_subs = pluralize(subs)
                     modified_subs.append(new_subs)
                 elif((word_tag=="NNS" and subs_tag=="NNS") or (word_tag=="NN" and subs_tag=="NN")):
                     modified_subs.append(subs)
@@ -490,12 +488,10 @@ def convertGrammStructure(word_subs_dict, word_sentence_dict):
                 subs_tag = getPosTag(subs)
                 subs_type = getTypeFromTag(subs_tag)
                 if(word_tag=="JJR" and (subs_tag=="JJS" or subs_tag=="JJ")):
-                    # new_subs = comparative(subs)
-                    new_subs = subs
+                    new_subs = comparative(subs)
                     modified_subs.append(new_subs)
                 elif(word_tag=="JJS" and (subs_tag=="JJR" or subs_tag=="JJ")):
-                    # new_subs = superlative(subs)
-                    new_subs = subs
+                    new_subs = superlative(subs)
                     modified_subs.append(new_subs)
                 elif((word_tag=="JJR" and subs_tag=="JJR") or (word_tag=="JJS" and subs_tag=="JJS") or (word_tag=="JJ" and subs_tag=="JJ")):
                     modified_subs.append(subs)
@@ -841,7 +837,7 @@ def getDefinitions(word_cand_list,word_sentence_dict):
                 
         
         if(target_word and candidate and definition):
-            text = target_word + " (replaced with " + candidate + ") is: " + definition.lower()
+            text = target_word.lower() + " (replaced with " + candidate.lower() + ") is: " + definition.lower()
         # elif(target_word and definition):
         #     text = target_word + " is: " + definition.lower()
             
@@ -890,7 +886,6 @@ def simplify(text, showDefinitions, printText=False):
     word_replace_dict = {}
     thresh_scores = {} 
     thresh_scores, word_sentence_dict = complexWordIdentif(text)
-#     print(word_sentence_dict)
     word_subst_dict = {}
     new_text = text # initialize the new string with the original one
     newtext_list = word_tokenize(new_text)
